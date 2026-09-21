@@ -16,6 +16,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~56.0.21",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^6.5.20",
     "@react-navigation/native": "^6.1.9",
@@ -24,11 +25,13 @@
     "expo-splash-screen": "~56.0.15",
     "expo-status-bar": "~56.0.4",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.85.3",
     "react-native-gesture-handler": "~2.31.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-svg": "15.15.4"
+    "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -44,6 +47,8 @@
     "prettier": "^3.3.3",
     "typescript": "~6.0.3"
   },
-  "engines": { "node": ">=22.0.0" },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "private": true
 }
