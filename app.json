@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0B0F11"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.statspalpite.app"
@@ -25,6 +27,12 @@
       "package": "com.statspalpite.app",
       "edgeToEdgeEnabled": true
     },
-    "plugins": ["expo-splash-screen"]
+    "plugins": [
+      "expo-splash-screen"
+    ],
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    }
   }
 }
