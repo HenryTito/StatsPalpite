@@ -33,7 +33,7 @@ async function listRanking({ limit = 50, offset = 0 } = {}) {
   };
 }
 
-/** Posição de um usuário e a distância para subir (RF86). */
+/** Posição de um usuário e a distância para subir (RF80). */
 async function getUserPosition(userId) {
   const user = await User.findByPk(userId);
   if (!user) throw AppError.notFound('Usuário não encontrado');

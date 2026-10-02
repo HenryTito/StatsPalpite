@@ -19,7 +19,7 @@ const { getWeatherProvider } = require('../providers');
 /** Quantos jogos entram no cálculo de forma recente. */
 const FORM_WINDOW = 6;
 
-/** Partida sem sincronizar há mais que isto dispara o aviso do RF72. */
+/** Partida sem sincronizar há mais que isto dispara o aviso do RF68. */
 const STALE_AFTER_HOURS = 48;
 
 const MATCH_INCLUDES = [
@@ -148,12 +148,12 @@ async function summarize(match) {
     probability,
     form: { home: homeForm, away: awayForm },
     syncedAt: match.syncedAt,
-    /** RF72: avisa que os dados podem estar velhos antes de o usuário palpitar. */
+    /** RF68: avisa que os dados podem estar velhos antes de o usuário palpitar. */
     stale: staleHours !== null && staleHours > STALE_AFTER_HOURS,
   };
 }
 
-/** Partidas do dia, com filtros do RF17 (liga, data, time, status). */
+/** Partidas do dia, com filtros do RF16 (liga, data, time, status). */
 async function listMatches({ date, leagueId, teamId, status, limit = 50, offset = 0 } = {}) {
   const { start, end } = dayRange(date ? new Date(date) : new Date());
 
@@ -230,7 +230,7 @@ async function getMatchDetail(matchId) {
   };
 }
 
-/** Comparação entre dois times (RF06, RF37, RF46). */
+/** Comparação entre dois times (RF06, RF37, RF37). */
 async function compareTeams(homeTeamId, awayTeamId, { limit = 10 } = {}) {
   const [home, away] = await Promise.all([Team.findByPk(homeTeamId), Team.findByPk(awayTeamId)]);
   if (!home) throw AppError.notFound('Time mandante não encontrado');

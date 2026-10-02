@@ -79,7 +79,7 @@ Exige `Authorization: Bearer <accessToken>`. **200** com `{ user }`.
 
 ## Partidas
 
-### `GET /matches` — RF03, RF17
+### `GET /matches` — RF03, RF16
 
 Query: `date` (YYYY-MM-DD, padrão hoje), `leagueId`, `teamId`, `status`,
 `limit` (≤100), `offset`.
@@ -105,7 +105,7 @@ Query: `date` (YYYY-MM-DD, padrão hoje), `leagueId`, `teamId`, `status`,
 ```
 
 `probability` sempre soma exatamente 100. `stale` fica `true` quando a partida
-não é sincronizada há mais de 48 horas (**RF72**).
+não é sincronizada há mais de 48 horas (**RF68**).
 
 ### `GET /matches/:id` — RF04, RF15, RF36, RF62
 
@@ -146,12 +146,12 @@ Estádios com nome, cidade, capacidade, ano e coordenadas para o mapa.
 
 ## Ranking
 
-### `GET /ranking?limit=&offset=` — RF11
+### `GET /ranking?limit=&offset=` — RF10
 
 Posições numeradas a partir de 1, ordenadas por pontos. Empate é desfeito pela
 data de criação da conta, o que mantém a ordem estável entre páginas.
 
-### `GET /ranking/me` — RF86
+### `GET /ranking/me` — RF80
 
 Autenticado. Posição, pontos, `pointsToClimb` e `leaderPoints`.
 
@@ -170,7 +170,7 @@ virarem zero.
 Autenticação opcional: com token, inclui a posição do usuário no ranking.
 Traz totais do dia e os destaques, ordenados por volume de palpites da
 comunidade e, no empate, pelo equilíbrio do jogo. Cada destaque carrega
-`community` com a distribuição dos palpites (**RF26**).
+`community` com a distribuição dos palpites (**RF24**).
 
 ### `GET /digest/previous-round?days=` — RF77
 

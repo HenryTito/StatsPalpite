@@ -11,13 +11,13 @@ por serviço nenhum.
 
 | Regra | Requisito | Onde é garantida |
 |---|---|---|
-| Um palpite por usuário por partida | implícito no RF09 | índice único `predictions_user_match_unique` |
-| Aposta de 1 a 10 pontos | RF09 | `CHECK predictions_stake_range` |
-| Sem palpite depois do apito inicial | RF44 | gatilho `predictions_kickoff_guard` |
-| Sem palpite em partida ao vivo ou encerrada | RF44 | mesmo gatilho, pela situação da partida |
-| Palpite perdido não credita pontos | RF10 | `CHECK predictions_status_consistency` |
-| Palpite ganho credita acima de zero | RF10 | mesmo CHECK |
-| Palpite pendente não tem pontos nem data de apuração | RF10 | mesmo CHECK |
+| Um palpite por usuário por partida | implícito no RF08 | índice único `predictions_user_match_unique` |
+| Aposta de 1 a 10 pontos | RF08 | `CHECK predictions_stake_range` |
+| Sem palpite depois do apito inicial | RF41 | gatilho `predictions_kickoff_guard` |
+| Sem palpite em partida ao vivo ou encerrada | RF41 | mesmo gatilho, pela situação da partida |
+| Palpite perdido não credita pontos | RF09 | `CHECK predictions_status_consistency` |
+| Palpite ganho credita acima de zero | RF09 | mesmo CHECK |
+| Palpite pendente não tem pontos nem data de apuração | RF09 | mesmo CHECK |
 | Placar palpitado não é negativo | — | `CHECK predictions_predicted_goals_non_negative` |
 
 **Por que o gatilho confere duas coisas.** O horário de início sozinho não
@@ -35,8 +35,8 @@ mesma partida: o índice único resolve no banco, uma vence e a outra recebe
 | Regra | Requisito | Onde é garantida |
 |---|---|---|
 | Pontuação do usuário nunca fica negativa | — | `CHECK users_points_non_negative` |
-| Pontuação do perfil é a soma dos palpites apurados | RF10, RF11 | derivada no seed e verificada por teste |
-| Posição no ranking começa em 1 | RF11 | `CHECK ranking_snapshots_valid` |
+| Pontuação do perfil é a soma dos palpites apurados | RF09, RF10 | derivada no seed e verificada por teste |
+| Posição no ranking começa em 1 | RF10 | `CHECK ranking_snapshots_valid` |
 | Um retrato de ranking por usuário por dia | RF71 | índice único `ranking_snapshots_user_day_unique` |
 
 **Sobre a pontuação derivada.** O seed não fixa números escolhidos a dedo. Um
@@ -72,12 +72,12 @@ a apuração da Sprint 2 fará a cada partida encerrada.
 Estas regras estão no documento de requisitos mas pertencem a requisitos da
 próxima sprint. Ficam registradas aqui para não se perderem:
 
-- **Orçamento diário de pontos (RF50).** O teto por dia depende de uma soma
+- **Orçamento diário de pontos (RF47).** O teto por dia depende de uma soma
   agregada por usuário e por data, que um `CHECK` não expressa. Vai no serviço
   de registro de palpite, com teste. O seed respeita o teto — nenhum usuário
   passa de 30 pontos em um dia.
-- **Pontuação por placar exato paga 5x (RF10).** O seed implementa o acerto
+- **Pontuação por placar exato paga 5x (RF09).** O seed implementa o acerto
   do vencedor, que paga 2x. A apuração completa entra junto com o cálculo
   automático ao fim da partida.
-- **Cancelamento com confirmação em duas etapas (RF44).** A janela de tempo já
+- **Cancelamento com confirmação em duas etapas (RF41).** A janela de tempo já
   é garantida pelo gatilho; falta o fluxo na interface.

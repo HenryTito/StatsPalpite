@@ -99,7 +99,7 @@ PostgreSQL. Duas extensões são carregadas por migration:
 | `matches`, `match_statistics`, `injuries` | partidas e seus dados |
 | `predictions` | palpites (a regra completa é da Sprint 2) |
 | `ranking_snapshots` | um retrato por usuário por dia, para o `RF71` |
-| `audit_logs` | rastro de ações do `RF28` |
+| `audit_logs` | rastro de ações do `RF25` |
 
 **Sobre o log de auditoria.** O documento de requisitos fala em "coleção
 separada no banco", vocabulário de banco de documentos. Como o `RNF05` obriga

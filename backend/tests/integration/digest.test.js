@@ -27,7 +27,7 @@ afterAll(async () => {
   await sequelize.close();
 });
 
-describe('GET /ranking (RF11)', () => {
+describe('GET /ranking (RF10)', () => {
   it('ordena por pontos, do maior para o menor', async () => {
     const response = await request(app).get(`${API}/ranking`);
 
@@ -47,7 +47,7 @@ describe('GET /ranking (RF11)', () => {
   });
 });
 
-describe('GET /ranking/me (RF86)', () => {
+describe('GET /ranking/me (RF80)', () => {
   it('informa posição, pontos e quanto falta para subir', async () => {
     const response = await request(app)
       .get(`${API}/ranking/me`)
@@ -132,7 +132,7 @@ describe('GET /digest/daily (RF53)', () => {
     expect(authenticated.body.ranking).toHaveProperty('position');
   });
 
-  it('traz a distribuição dos palpites da comunidade (RF26)', async () => {
+  it('traz a distribuição dos palpites da comunidade (RF24)', async () => {
     const response = await request(app).get(`${API}/digest/daily`);
     const withCommunity = response.body.highlights.filter((item) => item.community);
 
@@ -192,7 +192,7 @@ describe('controle de acesso por papel (RF14)', () => {
   });
 });
 
-describe('log de auditoria (RF28)', () => {
+describe('log de auditoria (RF25)', () => {
   it('registra o login do usuário', async () => {
     const { AuditLog } = require('../../src/models');
     await request(app)

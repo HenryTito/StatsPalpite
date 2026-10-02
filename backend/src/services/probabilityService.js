@@ -11,7 +11,7 @@
  *   confronto      (30%) — aproveitamento no histórico direto entre os dois
  *   fator casa     (20%) — vantagem fixa do mandante
  *
- * A "confiança do palpite" do RF21, com cinco fatores incluindo lesões e
+ * A "confiança do palpite" do RF18, com cinco fatores incluindo lesões e
  * clima, é da Sprint 2 e vai estender este módulo. O que existe aqui é a
  * probabilidade preliminar que a Home exibe.
  */

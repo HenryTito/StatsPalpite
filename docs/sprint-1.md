@@ -136,6 +136,52 @@ pontuação do palpite, pontuação de usuário não negativa, placar não negat
 minuto dentro de uma partida plausível, time não jogando contra si mesmo e
 posição de ranking começando em 1.
 
+## Correção dos códigos de requisito
+
+Ao conferir em qual sprint estava o orçamento diário, descobri que eu vinha
+citando códigos errados. A numeração que eu assumi, lida da ordem dos
+parágrafos do documento do professor, está deslocada em relação à planilha —
+na faixa dos palpites, consistentemente um número adiantado.
+
+Foram 49 citações corrigidas em 18 arquivos, entre comentários de código,
+documentação e nomes de teste.
+
+| Eu citava | É de fato | O correto é |
+|---|---|---|
+| RF09 — aposta de 1 a 10 | Cálculo de pontuação (S2) | **RF08** |
+| RF10 — pontuação 2x/5x | Ranking global (S2) | **RF09** |
+| RF11 — ranking global | Histórico de palpites (S2) | **RF10** |
+| RF44 — janela de palpite | Confronto em linha do tempo (S2) | **RF41** |
+| RF50 — orçamento diário | Áudio de 30 s (S3) | **RF47** |
+| RF26 — palpites da comunidade | Tema claro e escuro (S3) | **RF24** |
+| RF28 — log de auditoria | Simulação Monte Carlo (S2) | **RF25** |
+| RF17 — filtro avançado | Exportar CSV (S3) | **RF16** |
+| RF72 — aviso de dados velhos | Modo espectador (S2) | **RF68** |
+| RF86 — pontos para subir | não existe na planilha | **RF80** |
+| RF21 — confiança do palpite | Sincronização local (S3) | **RF18** |
+
+Todos os 45 códigos citados hoje foram conferidos contra a planilha, um a um:
+existem, e o significado bate.
+
+## Implementado além da Sprint 1
+
+Alguns itens de sprints seguintes vieram junto, por serem baratos quando a
+estrutura já estava montada. Ficam registrados para não serem contados duas
+vezes no planejamento:
+
+| Item | Sprint de origem | O que já existe |
+|---|---|---|
+| RNF07 | S3 | cabeçalhos de segurança com helmet; falta o certificado em produção |
+| RNF10 | S3 | diagrama de arquitetura, catálogo de endpoints e guia de ambiente |
+| RF25 | S3 | log de auditoria gravando login, logout e consultas |
+| RF16 | S3 | filtro por liga, data, time e situação em `GET /matches` |
+| RF68 | S3 | campo `stale` marcando dados com mais de 48 horas |
+| RF14 | S3 | controle de acesso por papel nas rotas de administração |
+| RF24 | S2 | distribuição dos palpites da comunidade no resumo diário |
+| RF80 | S2 | pontos para a próxima posição em `GET /ranking/me` |
+| RF08 | S2 | faixa de 1 a 10 garantida no banco; falta o endpoint de registro |
+| RF41 | S2 | janela de palpite garantida por gatilho; falta o fluxo na interface |
+
 ## Limitações declaradas
 
 - **Notificação local do RF43 exige development build.** Com Expo Go o
@@ -144,6 +190,6 @@ posição de ranking começando em 1.
   EAS resolve.
 - **Fastlane não foi executado aqui** — falta Ruby na máquina. A sintaxe dos
   três arquivos foi validada com `ruby -c`.
-- **Registro de palpite e cálculo de pontuação (`RF09`, `RF10`) são da Sprint
+- **Registro de palpite e cálculo de pontuação (`RF08`, `RF09`) são da Sprint
   2.** A tabela `predictions` existe porque o resumo diário e o ranking agregam
   sobre ela, e o seed a popula para que os números sejam reais.
