@@ -1,18 +1,52 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ApiError } from '../../core/api/ApiError';
+import { useI18n } from '../../core/i18n';
 import { colors, spacing } from '../../core/theme';
 import { Button, Field, Icon } from '../../core/ui';
+import { authRepository } from '../../infrastructure/repositories/apiRepositories';
+import { useSession } from '../../modules/auth/SessionContext';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
+  const { t } = useI18n();
+  const { signIn } = useSession();
+
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [senhaVisivel, setSenhaVisivel] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  const entrar = async () => {
+    setEnviando(true);
+    setErro(null);
+    try {
+      await signIn({ email: email.trim(), password: senha });
+    } catch (caught) {
+      setErro(caught instanceof ApiError ? caught.message : t('common.error'));
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const recuperarSenha = async () => {
+    if (!email.includes('@')) {
+      setErro(t('login.emailPlaceholder'));
+      return;
+    }
+    try {
+      const response = await authRepository.forgotPassword(email.trim());
+      setErro(response.message);
+    } catch (caught) {
+      setErro(caught instanceof ApiError ? caught.message : t('common.error'));
+    }
+  };
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -21,40 +55,53 @@ export function LoginScreen({ navigation }: Props) {
           <Icon name="logo" size={34} color={colors.onAcc} />
         </View>
         <Text style={styles.wordmark}>StatsPalpite</Text>
-        <Text style={styles.tagline}>Analise antes de palpitar.</Text>
+        <Text style={styles.tagline}>{t('login.tagline')}</Text>
 
         <View style={styles.form}>
           <Field
-            label="E-mail"
+            label={t('login.email')}
             value={email}
             onChangeText={setEmail}
-            placeholder="nome@email.com"
+            placeholder={t('login.emailPlaceholder')}
             keyboardType="email-address"
           />
           <Field
-            label="Senha"
+            label={t('login.password')}
             value={senha}
             onChangeText={setSenha}
             placeholder="••••••••"
             secureTextEntry={!senhaVisivel}
             right={
-              <View onTouchEnd={() => setSenhaVisivel((v) => !v)}>
+              <Pressable
+                onPress={() => setSenhaVisivel((visivel) => !visivel)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t('login.password')}
+              >
                 <Icon name="eye" size={20} color={colors.ink3} />
-              </View>
+              </Pressable>
             }
           />
         </View>
 
-        <Text style={styles.forgot}>Esqueci a senha</Text>
+        {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
-        <Button label="Entrar" onPress={() => navigation.replace('Tabs', { screen: 'Home' })} />
+        <Pressable onPress={recuperarSenha} accessibilityRole="button">
+          <Text style={styles.forgot}>{t('login.forgot')}</Text>
+        </Pressable>
+
         <Button
-          label="Criar conta"
+          label={enviando ? t('common.loading') : t('login.signIn')}
+          onPress={enviando ? undefined : entrar}
+          disabled={enviando}
+        />
+        <Button
+          label={t('login.signUp')}
           variant="secondary"
           onPress={() => navigation.navigate('Cadastro')}
         />
       </View>
-      <Text style={styles.legal}>Uso permitido apenas para maiores de 18 anos</Text>
+      <Text style={styles.legal}>{t('login.legal')}</Text>
     </SafeAreaView>
   );
 }
@@ -79,6 +126,7 @@ const styles = StyleSheet.create({
   },
   tagline: { fontSize: 14, color: colors.ink2 },
   form: { gap: spacing.md, marginTop: spacing.lg },
+  erro: { fontSize: 13, color: colors.dan },
   forgot: { fontSize: 13, color: colors.acc, fontWeight: '600', textAlign: 'right' },
   legal: {
     textAlign: 'center',

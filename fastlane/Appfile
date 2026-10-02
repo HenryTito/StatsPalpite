@@ -1,0 +1,6 @@
+# Identificador do pacote, o mesmo declarado em app.json.
+package_name("com.statspalpite.app")
+
+# O JSON da conta de serviço só é necessário para publicar na Play Store.
+# Até lá, as lanes de build funcionam sem ele.
+json_key_file(ENV["PLAY_STORE_JSON_KEY"]) if ENV["PLAY_STORE_JSON_KEY"]

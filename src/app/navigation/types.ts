@@ -20,6 +20,10 @@ export type RootStackParamList = {
   PartidaAoVivo: { partidaId?: string } | undefined;
   Offline: undefined;
   PainelAdmin: undefined;
+  Busca: undefined;
+  MapaEstadios: undefined;
+  ResumoDiario: undefined;
+  BoletimRodada: undefined;
 };
 
 declare global {

@@ -1,25 +1,57 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing } from '../../core/theme';
-import { Icon, Screen, SectionTitle, StatTile } from '../../core/ui';
-import { perfilUsuario, posicaoDoUsuario } from '../../infrastructure/fixtures/ranking';
-
-/** Acima deste percentual a barra do grafico usa o acento cheio. */
-const LIMIAR_DESTAQUE = 70;
+import { useAsync } from '../../core/hooks/useAsync';
+import { SUPPORTED_LOCALES, useI18n, type Locale } from '../../core/i18n';
+import { colors, radius, spacing } from '../../core/theme';
+import {
+  AsyncBoundary,
+  Button,
+  Icon,
+  LineChart,
+  Screen,
+  SectionTitle,
+  StatTile,
+} from '../../core/ui';
+import { rankingRepository } from '../../infrastructure/repositories/apiRepositories';
+import { useSession } from '../../modules/auth/SessionContext';
 
 export function PerfilScreen() {
+  const { t, locale, setLocale, formatNumber } = useI18n();
+  const { user, signOut } = useSession();
+
+  const { data, loading, error, reload } = useAsync(
+    async () =>
+      user
+        ? {
+            position: await rankingRepository.myPosition(),
+            // RF71: série dos últimos 30 dias.
+            history: await rankingRepository.myHistory(30),
+          }
+        : null,
+    [user?.id],
+  );
+
+  const chartPoints = (data?.history.points ?? []).map((point) => ({
+    date: point.date,
+    value: point.position,
+  }));
+
   return (
     <Screen
       header={
         <View style={styles.header}>
           <View style={styles.identity}>
             <View style={styles.avatar}>
-              <Text style={styles.initials}>{perfilUsuario.iniciais}</Text>
+              <Text style={styles.initials}>
+                {(user?.username ?? '??').slice(0, 2).toUpperCase()}
+              </Text>
             </View>
             <View>
-              <Text style={styles.username}>{perfilUsuario.usuario}</Text>
+              <Text style={styles.username}>{user?.username ?? '—'}</Text>
               <Text style={styles.subtitle}>
-                #{posicaoDoUsuario.posicao} · {posicaoDoUsuario.pontos} pts
+                {data?.position
+                  ? `#${data.position.position} · ${formatNumber(data.position.points)} ${t('ranking.points')}`
+                  : '—'}
               </Text>
             </View>
           </View>
@@ -28,42 +60,76 @@ export function PerfilScreen() {
       }
       contentStyle={styles.content}
     >
-      <View style={styles.tiles}>
-        <StatTile label="Taxa de acerto" value={perfilUsuario.taxaAcerto} size="lg" />
-        <StatTile label="Palpites" value={perfilUsuario.palpites} size="lg" />
-        <StatTile label="Sequência" value={perfilUsuario.sequencia} size="lg" />
-      </View>
-
-      <SectionTitle style={styles.section}>Últimos 7 dias</SectionTitle>
-      <View style={styles.chart}>
-        {perfilUsuario.ultimosSeteDias.map((altura, index) => (
-          <View
-            key={index}
-            style={[
-              styles.bar,
-              {
-                height: `${altura}%`,
-                backgroundColor: altura > LIMIAR_DESTAQUE ? colors.accStrong : colors.accBg,
-              },
-            ]}
+      <AsyncBoundary loading={loading} error={error} hasData={data !== null} onRetry={reload}>
+        <View style={styles.tiles}>
+          <StatTile
+            label={t('ranking.yourPosition')}
+            value={data?.position ? `#${data.position.position}` : '—'}
+            size="lg"
           />
-        ))}
-      </View>
+          <StatTile
+            label={t('ranking.best')}
+            value={
+              data?.history.best !== null && data?.history.best !== undefined
+                ? `#${data.history.best}`
+                : '—'
+            }
+            size="lg"
+          />
+          <StatTile
+            label={t('ranking.worst')}
+            value={
+              data?.history.worst !== null && data?.history.worst !== undefined
+                ? `#${data.history.worst}`
+                : '—'
+            }
+            size="lg"
+          />
+        </View>
 
-      <SectionTitle style={styles.section}>Conquistas</SectionTitle>
-      <View style={styles.achievements}>
-        <View style={[styles.achievement, { backgroundColor: colors.warnBg }]}>
-          <Icon name="flame" size={24} color={colors.warn} />
+        <SectionTitle style={styles.section}>{t('ranking.evolution')}</SectionTitle>
+        <View style={styles.chartCard}>
+          <LineChart
+            points={chartPoints}
+            height={140}
+            // Posição menor é melhor: o eixo precisa subir quando o número cai.
+            invertY
+            emptyMessage={t('ranking.noHistory')}
+          />
+          {data?.history && data.history.change !== 0 ? (
+            <Text
+              style={[styles.change, { color: data.history.change > 0 ? colors.acc : colors.dan }]}
+            >
+              {data.history.change > 0 ? '▲' : '▼'} {Math.abs(data.history.change)} posições em{' '}
+              {data.history.days} dias
+            </Text>
+          ) : null}
         </View>
-        <View style={[styles.achievement, { backgroundColor: colors.accBg }]}>
-          <Icon name="target" size={24} color={colors.acc} />
+
+        <SectionTitle style={styles.section}>{t('settings.language')}</SectionTitle>
+        <View style={styles.languages}>
+          {SUPPORTED_LOCALES.map((item: Locale) => (
+            <Pressable
+              key={item}
+              onPress={() => setLocale(item)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: item === locale }}
+              style={[styles.language, item === locale && styles.languageActive]}
+            >
+              <Text style={[styles.languageLabel, item === locale && styles.languageLabelActive]}>
+                {item === 'pt-BR' ? t('settings.portuguese') : t('settings.english')}
+              </Text>
+            </Pressable>
+          ))}
         </View>
-        {[0, 1].map((index) => (
-          <View key={index} style={[styles.achievement, { backgroundColor: colors.sur2 }]}>
-            <Icon name="lock" size={22} color={colors.bd2} />
-          </View>
-        ))}
-      </View>
+
+        <Button
+          label={t('settings.logout')}
+          variant="secondary"
+          onPress={signOut}
+          style={styles.logout}
+        />
+      </AsyncBoundary>
     </Screen>
   );
 }
@@ -93,20 +159,20 @@ const styles = StyleSheet.create({
   content: { gap: 14, paddingBottom: spacing.xxxl },
   tiles: { flexDirection: 'row', gap: 10 },
   section: { marginTop: 6 },
-  chart: {
-    height: 130,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 10,
-    paddingHorizontal: 2,
-  },
-  bar: { flex: 1, borderRadius: 6 },
-  achievements: { flexDirection: 'row', gap: spacing.md },
-  achievement: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  chartCard: { backgroundColor: colors.sur2, borderRadius: radius.lg, padding: spacing.md },
+  change: { fontSize: 12, fontWeight: '600', marginTop: spacing.sm },
+  languages: { flexDirection: 'row', gap: spacing.sm },
+  language: {
+    flex: 1,
+    height: 44,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.bd,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  languageActive: { backgroundColor: colors.accBg, borderColor: colors.accLine },
+  languageLabel: { fontSize: 14, color: colors.ink2 },
+  languageLabelActive: { color: colors.acc, fontWeight: '600' },
+  logout: { marginTop: spacing.sm },
 });
