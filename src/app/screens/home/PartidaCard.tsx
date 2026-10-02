@@ -1,11 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useI18n } from '../../../core/i18n';
 import { colors, spacing } from '../../../core/theme';
 import { Badge, Card, SplitBar } from '../../../core/ui';
 import type { Partida } from '../../../modules/partidas/domain/Partida';
 
 /** Card de partida da Home e da tela offline. */
 export function PartidaCard({ partida, onPress }: { partida: Partida; onPress?: () => void }) {
+  const { t } = useI18n();
   const aoVivo = partida.status === 'ao-vivo';
 
   return (
@@ -13,7 +15,7 @@ export function PartidaCard({ partida, onPress }: { partida: Partida; onPress?: 
       <View style={styles.header}>
         <Text style={styles.meta}>{partida.liga}</Text>
         {aoVivo ? (
-          <Badge label={`Ao vivo ${partida.horario}`} tone="danger" />
+          <Badge label={`${t('home.live')} ${partida.horario}`} tone="danger" />
         ) : (
           <Text style={styles.meta}>{partida.horario}</Text>
         )}
@@ -40,7 +42,7 @@ export function PartidaCard({ partida, onPress }: { partida: Partida; onPress?: 
               right={100 - partida.probabilidade.mandante - partida.probabilidade.visitante}
             />
           </View>
-          <Badge label={`Confiança ${partida.confianca}%`} style={styles.badge} />
+          <Badge label={t('home.confidence', { value: partida.confianca })} style={styles.badge} />
         </>
       ) : null}
     </Card>

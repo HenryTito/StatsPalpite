@@ -167,7 +167,11 @@ export function HomeScreen() {
           ) : null}
 
           {visiveis.map((match) => (
-            <PartidaCard key={match.id} partida={toPartida(match)} onPress={() => abrir(match)} />
+            <PartidaCard
+              key={match.id}
+              partida={toPartida(match, { t, formatTime })}
+              onPress={() => abrir(match)}
+            />
           ))}
 
           {lastSyncedAt ? (

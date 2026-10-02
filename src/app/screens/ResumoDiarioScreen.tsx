@@ -21,7 +21,7 @@ import type { RootStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<RootStackParamList, 'ResumoDiario'>;
 
 export function ResumoDiarioScreen({ navigation }: Props) {
-  const { t } = useI18n();
+  const { t, formatTime } = useI18n();
   const { data, loading, error, reload } = useAsync(() => digestRepository.daily(), []);
 
   return (
@@ -51,7 +51,7 @@ export function ResumoDiarioScreen({ navigation }: Props) {
             {data.highlights.map((highlight) => (
               <View key={highlight.id} style={styles.highlight}>
                 <PartidaCard
-                  partida={toPartida(highlight)}
+                  partida={toPartida(highlight, { t, formatTime })}
                   onPress={() => navigation.navigate('DetalhePartida', { partidaId: highlight.id })}
                 />
 

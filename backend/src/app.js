@@ -3,11 +3,11 @@
 const compression = require('compression');
 const cors = require('cors');
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 
 const env = require('./config/env');
 const { errorHandler, notFound } = require('./middlewares/errorHandler');
+const { createGlobalLimiter } = require('./middlewares/rateLimiters');
 const routes = require('./routes');
 
 function createApp() {
@@ -33,16 +33,7 @@ function createApp() {
   app.use(express.urlencoded({ extended: true }));
 
   // Teto geral de requisições; as rotas de credencial têm o seu, mais estreito.
-  if (!env.isTest) {
-    app.use(
-      rateLimit({
-        windowMs: 60 * 1000,
-        limit: 120,
-        standardHeaders: true,
-        legacyHeaders: false,
-      }),
-    );
-  }
+  app.use(createGlobalLimiter());
 
   app.use('/api/v1', routes);
 
