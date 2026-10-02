@@ -196,18 +196,19 @@ async function replaceInjuries(dtos, { players, teams }, transaction) {
 async function syncAll({ from, to, engine = getIngestionEngine() } = {}) {
   const startedAt = Date.now();
 
-  const [leagueDtos, venueDtos, teamDtos, playerDtos, refereeDtos, matchDtos, injuryDtos] =
-    await Promise.all([
-      engine.getLeagues(),
-      engine.getVenues(),
-      engine.getTeams(),
-      engine.getPlayers(),
-      engine.getReferees(),
-      engine.getMatches({ from, to }),
-      engine.getInjuries(),
-    ]);
-
-  const statisticDtos = await engine.getStatistics(matchDtos.map((match) => match.externalId));
+  // Uma fonte só para todo o catálogo: misturar duas quebra as chaves externas.
+  const catalog = await engine.getCatalog({ from, to });
+  const {
+    source,
+    leagues: leagueDtos,
+    venues: venueDtos,
+    teams: teamDtos,
+    players: playerDtos,
+    referees: refereeDtos,
+    matches: matchDtos,
+    injuries: injuryDtos,
+    statistics: statisticDtos,
+  } = catalog;
 
   const summary = await sequelize.transaction(async (transaction) => {
     const leagues = indexBy(await upsertLeagues(leagueDtos, transaction));
@@ -240,8 +241,8 @@ async function syncAll({ from, to, engine = getIngestionEngine() } = {}) {
   });
 
   const durationMs = Date.now() - startedAt;
-  logger.info('sincronização concluída', { ...summary, durationMs });
-  return { ...summary, durationMs };
+  logger.info('sincronização concluída', { ...summary, source, durationMs });
+  return { ...summary, source, durationMs };
 }
 
 module.exports = { syncAll, indexBy };

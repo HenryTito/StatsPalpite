@@ -3,9 +3,10 @@
 const bcrypt = require('bcryptjs');
 
 const logger = require('../config/logger');
-const { sequelize, User, Match, Prediction } = require('../models');
+const { Op } = require('sequelize');
+
+const { sequelize, User, Match, Prediction, RankingSnapshot } = require('../models');
 const ingestionService = require('../services/ingestionService');
-const rankingService = require('../services/rankingService');
 
 /**
  * Popula o banco para desenvolvimento e demonstração.
@@ -135,16 +136,56 @@ async function recalculatePoints(users) {
   return users.length;
 }
 
-/** Histórico de 30 dias para o gráfico do RF71. */
+/**
+ * Histórico de 30 dias para o gráfico do RF71.
+ *
+ * Cada dia guarda a pontuação que o usuário TINHA naquele dia, somando os
+ * palpites apurados até ali. Gravar a pontuação de hoje em todos os trinta e
+ * um dias produziria uma linha reta e um gráfico de evolução que não evolui.
+ */
 async function seedRankingHistory(users) {
   let days = 0;
+
   for (let offset = 30; offset >= 0; offset -= 1) {
     const date = new Date();
-    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCHours(23, 59, 59, 999);
     date.setUTCDate(date.getUTCDate() - offset);
-    await rankingService.captureDailySnapshot({ date });
+
+    // Pontuação acumulada de cada usuário até o fim daquele dia.
+    const totals = await Promise.all(
+      users.map(async (user) => ({
+        user,
+        points:
+          (await Prediction.sum('pointsAwarded', {
+            where: {
+              userId: user.id,
+              status: ['won', 'lost'],
+              settledAt: { [Op.lte]: date },
+            },
+          })) || 0,
+      })),
+    );
+
+    // Mais pontos primeiro; empate desfeito pela ordem de criação da conta.
+    totals.sort((a, b) => b.points - a.points || a.user.createdAt - b.user.createdAt);
+
+    const capturedOn = date.toISOString().slice(0, 10);
+    for (const [index, entry] of totals.entries()) {
+      const payload = {
+        userId: entry.user.id,
+        capturedOn,
+        position: index + 1,
+        points: entry.points,
+      };
+      await RankingSnapshot.findOrCreate({
+        where: { userId: entry.user.id, capturedOn },
+        defaults: payload,
+      }).then(([snapshot, created]) => (created ? snapshot : snapshot.update(payload)));
+    }
+
     days += 1;
   }
+
   return { days, users: users.length };
 }
 
