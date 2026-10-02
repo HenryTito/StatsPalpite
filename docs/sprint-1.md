@@ -114,6 +114,28 @@ escalação de privilégio pelo corpo do cadastro, JWT com `alg=none`, JWT
 assinado com outro segredo, acesso a rota de administração sem papel, e
 vazamento de hash de senha nas respostas.
 
+## Auditoria de regras de negócio
+
+Uma segunda rodada, agora contra as regras do jogo em vez da segurança da
+API, encontrou quatro problemas. O detalhamento está em
+`backend/docs/regras-de-negocio.md`.
+
+| # | Problema | Efeito |
+|---|---|---|
+| 1 | Nenhuma restrição de faixa na aposta: o banco aceitava −500 e 1.000.000 pontos | pontuação arbitrária no ranking |
+| 2 | Nenhuma guarda de tempo: aceitava palpite em partida já encerrada | palpitar sabendo o resultado |
+| 3 | Partidas marcadas como "ao vivo" com início no futuro, com placar e minuto corrente | dado visivelmente incoerente na Home |
+| 4 | Pontuação do perfil desconectada dos palpites: 1204 pontos para quem somava 44 | o ranking não correspondia a nada |
+
+O que **já estava protegido**: dois palpites do mesmo usuário na mesma
+partida, inclusive em requisições simultâneas — o índice único resolve no
+banco, e há um teste que dispara as duas em paralelo.
+
+Também passaram a ser garantidos no banco: coerência entre situação e
+pontuação do palpite, pontuação de usuário não negativa, placar não negativo,
+minuto dentro de uma partida plausível, time não jogando contra si mesmo e
+posição de ranking começando em 1.
+
 ## Limitações declaradas
 
 - **Notificação local do RF43 exige development build.** Com Expo Go o

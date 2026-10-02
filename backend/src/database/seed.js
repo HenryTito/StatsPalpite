@@ -17,15 +17,23 @@ const rankingService = require('../services/rankingService');
 
 const DEMO_PASSWORD = 'Palpite123';
 
+/**
+ * Os pontos NÃO são fixados aqui.
+ *
+ * Números escolhidos a dedo criam uma incoerência que qualquer consulta
+ * revela: um usuário com 1204 pontos no perfil cujos palpites somam 44. A
+ * pontuação é derivada dos palpites depois que eles existem, do mesmo jeito
+ * que a apuração da Sprint 2 fará.
+ */
 const DEMO_USERS = [
-  { username: 'henrytito', email: 'henry@statspalpite.app', role: 'admin', points: 328 },
-  { username: 'marcosbet', email: 'marcos@statspalpite.app', role: 'user', points: 1204 },
-  { username: 'ana_stats', email: 'ana@statspalpite.app', role: 'user', points: 1150 },
-  { username: 'jp_futebol', email: 'jp@statspalpite.app', role: 'user', points: 1098 },
-  { username: 'tatica10', email: 'tatica@statspalpite.app', role: 'user', points: 1041 },
-  { username: 'gol_de_placa', email: 'gol@statspalpite.app', role: 'user', points: 987 },
-  { username: 'bia_palpites', email: 'bia@statspalpite.app', role: 'user', points: 940 },
-  { username: 'zagueiro77', email: 'zagueiro@statspalpite.app', role: 'user', points: 902 },
+  { username: 'henrytito', email: 'henry@statspalpite.app', role: 'admin' },
+  { username: 'marcosbet', email: 'marcos@statspalpite.app', role: 'user' },
+  { username: 'ana_stats', email: 'ana@statspalpite.app', role: 'user' },
+  { username: 'jp_futebol', email: 'jp@statspalpite.app', role: 'user' },
+  { username: 'tatica10', email: 'tatica@statspalpite.app', role: 'user' },
+  { username: 'gol_de_placa', email: 'gol@statspalpite.app', role: 'user' },
+  { username: 'bia_palpites', email: 'bia@statspalpite.app', role: 'user' },
+  { username: 'zagueiro77', email: 'zagueiro@statspalpite.app', role: 'user' },
 ];
 
 const CHOICES = ['home', 'draw', 'away'];
@@ -44,7 +52,6 @@ async function seedUsers() {
         // Todos maiores de 18, para não esbarrarem no RF31.
         birthDate: '1998-04-12',
         role: demo.role,
-        points: demo.points,
       },
     });
     users.push(user);
@@ -59,7 +66,9 @@ async function seedUsers() {
  * produz sempre o mesmo cenário.
  */
 async function seedPredictions(users) {
-  const matches = await Match.findAll({ order: [['kickoffAt', 'DESC']], limit: 40 });
+  // Partidas encerradas rendem palpites apurados, que é o que alimenta o
+  // ranking; as futuras rendem os pendentes que aparecem em "meus palpites".
+  const matches = await Match.findAll({ order: [['kickoffAt', 'DESC']], limit: 80 });
   if (!matches.length) return 0;
 
   let created = 0;
@@ -72,6 +81,11 @@ async function seedPredictions(users) {
       const choice = CHOICES[(userIndex + matchIndex) % CHOICES.length];
       const stake = ((userIndex + matchIndex) % 10) + 1;
       const actual = match.outcome();
+
+      // Partida que já começou e ainda não foi apurada não aceita palpite
+      // pendente: o gatilho do banco recusa, e com razão.
+      const alreadyStarted = new Date(match.kickoffAt) <= new Date();
+      if (!actual && alreadyStarted) continue;
 
       let status = 'pending';
       let pointsAwarded = null;
@@ -105,6 +119,22 @@ async function seedPredictions(users) {
   return created;
 }
 
+/**
+ * Deriva a pontuação de cada usuário da soma dos palpites apurados.
+ *
+ * É a mesma conta que a apuração da Sprint 2 fará a cada partida encerrada.
+ * Fazendo aqui, o ranking passa a ser verificável: a soma bate com o perfil.
+ */
+async function recalculatePoints(users) {
+  for (const user of users) {
+    const total = await Prediction.sum('pointsAwarded', {
+      where: { userId: user.id, status: ['won', 'lost'] },
+    });
+    await user.update({ points: total || 0 });
+  }
+  return users.length;
+}
+
 /** Histórico de 30 dias para o gráfico do RF71. */
 async function seedRankingHistory(users) {
   let days = 0;
@@ -132,6 +162,10 @@ async function run() {
   logger.info('seed: criando palpites');
   const predictions = await seedPredictions(users);
 
+  logger.info('seed: recalculando pontuação a partir dos palpites');
+  await recalculatePoints(users);
+
+  // O histórico lê a pontuação já consolidada, então vem por último.
   logger.info('seed: gravando histórico de ranking');
   const history = await seedRankingHistory(users);
 
