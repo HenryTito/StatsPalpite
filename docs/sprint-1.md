@@ -72,15 +72,33 @@ verificado. Pontos e horas vêm da planilha `backlog-statspalpite`.
 
 3. **Crash no arranque com `expo-notifications`** — descoberto ao rodar no
    Android 11. Desde o SDK 53 o módulo lança ao ser avaliado dentro do Expo Go,
-   porque registra um listener de push remoto que o Expo Go deixou de suportar;
-   um import estático derrubava o app inteiro. Passou a ser carregado sob
-   demanda e protegido.
+   porque registra um listener de push remoto que o Expo Go deixou de suportar.
+   A primeira correção — `require` dentro de try/catch — **não resolveu**: o
+   erro nasce de forma assíncrona dentro da inicialização do módulo, então o
+   catch nunca é alcançado. A correção boa verifica o ambiente com
+   `expo-constants` ANTES de importar, e no Expo Go o módulo nem é tocado.
+
+4. **Rate limiter derrubava a própria suíte de testes** — o teto de 20
+   requisições por 15 minutos nas rotas de credencial ficava ativo em teste, e
+   da 21ª chamada em diante tudo virava 429, mascarando 11 asserções de
+   negócio. Os limitadores foram extraídos para `middlewares/rateLimiters.js`,
+   desligados em teste, e cobertos por um teste próprio que os liga
+   explicitamente num app mínimo.
+
+5. **Teclado cobria o botão de entrar** — com o teclado aberto, o layout
+   comprimia e o aviso legal do rodapé subia por cima do botão "Entrar",
+   deixando-o inalcançável. Resolvido com `KeyboardAvoidingView` e `ScrollView`.
+
+6. **Strings do card de partida fora do i18n** — "Ao vivo" e "Confiança"
+   estavam fixas em português e apareciam em meio à interface em inglês. O
+   adaptador `toPartida` passou a receber o tradutor da tela.
 
 ## Limitações declaradas
 
 - **Notificação local do RF43 exige development build.** Com Expo Go o
-  agendamento é desativado em silêncio; o resto do app funciona. `npx expo
-  run:android` ou um build EAS resolve.
+  agendamento é desativado em silêncio, com um aviso no console em
+  desenvolvimento; o resto do app funciona. `npx expo run:android` ou um build
+  EAS resolve.
 - **Fastlane não foi executado aqui** — falta Ruby na máquina. A sintaxe dos
   três arquivos foi validada com `ruby -c`.
 - **Registro de palpite e cálculo de pontuação (`RF09`, `RF10`) são da Sprint

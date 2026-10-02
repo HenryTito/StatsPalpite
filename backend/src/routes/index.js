@@ -1,7 +1,6 @@
 'use strict';
 
 const { Router } = require('express');
-const rateLimit = require('express-rate-limit');
 
 const authController = require('../controllers/authController');
 const digestController = require('../controllers/digestController');
@@ -11,21 +10,13 @@ const searchController = require('../controllers/searchController');
 const systemController = require('../controllers/systemController');
 const { authenticate, optionalAuthenticate, requireRole } = require('../middlewares/authenticate');
 const { audit } = require('../middlewares/auditLog');
+const { createAuthLimiter } = require('../middlewares/rateLimiters');
 const { validate } = require('../middlewares/validate');
 
 const router = Router();
 
-/**
- * Limite estreito nas rotas de credencial: elas são o alvo de força bruta e de
- * enumeração de e-mail. As rotas de leitura usam o limite geral do app.
- */
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: { message: 'Muitas tentativas. Tente novamente em alguns minutos', code: 'RATE_LIMITED' } },
-});
+// Limite estreito nas rotas de credencial; desligado em teste.
+const authLimiter = createAuthLimiter();
 
 // Saúde e operação
 router.get('/health', systemController.health);

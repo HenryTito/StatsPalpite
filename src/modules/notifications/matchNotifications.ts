@@ -1,3 +1,4 @@
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 
 /**
@@ -6,12 +7,16 @@ import { Platform } from 'react-native';
  * É agendada pelo sistema, não por um timer do app: um setTimeout morreria
  * assim que o processo fosse encerrado, e o usuário não receberia nada.
  *
- * O módulo é carregado sob demanda e dentro de try/catch porque, a partir do
- * SDK 53, `expo-notifications` lança ao ser avaliado dentro do Expo Go — ele
- * registra um listener de push remoto que o Expo Go deixou de suportar. Um
- * import estático no topo derrubaria o app inteiro na abertura. Num
- * development build o módulo carrega normalmente e o agendamento funciona.
+ * A partir do SDK 53, `expo-notifications` lança ao ser avaliado dentro do
+ * Expo Go: ele registra um listener de push remoto que o Expo Go deixou de
+ * suportar. O erro nasce de forma assíncrona dentro da inicialização do
+ * módulo, então um try/catch em volta do require NÃO o alcança — por isso
+ * verificamos o ambiente ANTES de importar. Em development build ou em APK
+ * de produção o módulo carrega normalmente e o agendamento funciona.
  */
+
+/** Expo Go se identifica como `storeClient`. */
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 const MINUTES_BEFORE = 5;
 
@@ -27,6 +32,19 @@ let loadFailed = false;
 function loadNotifications(): NotificationsModule | null {
   if (cachedModule) return cachedModule;
   if (loadFailed) return null;
+
+  // No Expo Go nem chegamos a tocar no módulo: importá-lo já derruba o app.
+  if (isExpoGo) {
+    loadFailed = true;
+    if (__DEV__) {
+      console.info(
+        '[notificações] Expo Go não suporta expo-notifications desde o SDK 53; ' +
+          'o aviso de início de partida (RF43) fica desativado. ' +
+          'Use `npx expo run:android` ou um development build para habilitá-lo.',
+      );
+    }
+    return null;
+  }
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
