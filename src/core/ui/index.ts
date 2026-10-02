@@ -1,3 +1,4 @@
+export { DateField } from './DateField';
 export { AsyncBoundary } from './AsyncBoundary';
 export { ComparisonPanel } from './ComparisonPanel';
 export type { ComparisonMetric } from './ComparisonPanel';

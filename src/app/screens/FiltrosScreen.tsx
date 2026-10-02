@@ -6,7 +6,17 @@ import { ApiError } from '../../core/api/ApiError';
 import { useAsync } from '../../core/hooks/useAsync';
 import { useI18n } from '../../core/i18n';
 import { colors, radius, spacing } from '../../core/theme';
-import { Badge, BottomBar, Button, Chip, FieldLabel, Icon, Screen, TopBar } from '../../core/ui';
+import {
+  Badge,
+  BottomBar,
+  Button,
+  Chip,
+  DateField,
+  FieldLabel,
+  Icon,
+  Screen,
+  TopBar,
+} from '../../core/ui';
 import {
   matchRepository,
   searchRepository,
@@ -22,27 +32,6 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Filtros'>;
 
 /** Espera o usuário parar de digitar antes de consultar a API. */
 const DEBOUNCE_MS = 350;
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-/**
- * Confere se o texto é uma data que existe no calendário.
- *
- * O construtor de Date normaliza o excedente — 31 de fevereiro vira 3 de
- * março — então comparar os campos de volta é o que revela a data impossível.
- */
-function isRealDate(value: string): boolean {
-  if (!ISO_DATE.test(value)) return false;
-
-  const partes = value.split('-').map(Number);
-  const year = partes[0] ?? 0;
-  const month = partes[1] ?? 0;
-  const day = partes[2] ?? 0;
-
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return (
-    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
-  );
-}
 
 const STATUS_OPTIONS = ['scheduled', 'live', 'finished'] as const;
 
@@ -52,7 +41,6 @@ export function FiltrosScreen({ navigation }: Props) {
 
   // Começa do filtro em vigor: reabrir a tela mostra o que já está aplicado.
   const [rascunho, setRascunho] = useState<MatchFilter>(filter);
-  const [dataTexto, setDataTexto] = useState(filter.date ?? '');
   const [buscaTime, setBuscaTime] = useState(filter.teamName ?? '');
   const [sugestoes, setSugestoes] = useState<{ id: string; name: string }[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -85,17 +73,14 @@ export function FiltrosScreen({ navigation }: Props) {
     return () => clearTimeout(timer);
   }, [buscaTime, rascunho.teamName]);
 
-  const dataInvalida = dataTexto.length > 0 && !isRealDate(dataTexto);
-
   const aplicar = () => {
-    applyFilter({ ...rascunho, date: dataTexto && !dataInvalida ? dataTexto : null });
+    applyFilter(rascunho);
     navigation.goBack();
   };
 
   const limpar = () => {
     clearFilter();
     setRascunho(EMPTY_FILTER);
-    setDataTexto('');
     setBuscaTime('');
     setSugestoes([]);
   };
@@ -113,12 +98,7 @@ export function FiltrosScreen({ navigation }: Props) {
             onPress={limpar}
             style={styles.action}
           />
-          <Button
-            label={t('filters.apply')}
-            onPress={dataInvalida ? undefined : aplicar}
-            disabled={dataInvalida}
-            style={styles.action}
-          />
+          <Button label={t('filters.apply')} onPress={aplicar} style={styles.action} />
         </BottomBar>
       }
     >
@@ -147,19 +127,12 @@ export function FiltrosScreen({ navigation }: Props) {
         </View>
 
         <FieldLabel>{t('filters.date')}</FieldLabel>
-        <View style={[styles.input, dataInvalida && styles.inputErro]}>
-          <TextInput
-            style={styles.inputTexto}
-            value={dataTexto}
-            onChangeText={setDataTexto}
-            placeholder="AAAA-MM-DD"
-            placeholderTextColor={colors.ink3}
-            keyboardType="numbers-and-punctuation"
-            maxLength={10}
-          />
-          <Icon name="calendar" size={18} color={colors.ink3} />
-        </View>
-        {dataInvalida ? <Text style={styles.erro}>{t('filters.invalidDate')}</Text> : null}
+        <DateField
+          value={rascunho.date}
+          onChange={(data) => setRascunho((atual) => ({ ...atual, date: data }))}
+          placeholder={t('filters.anyDate')}
+          accessibilityLabel={t('filters.date')}
+        />
 
         <FieldLabel>{t('filters.team')}</FieldLabel>
         <View style={styles.input}>
