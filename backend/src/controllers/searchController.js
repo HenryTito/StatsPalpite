@@ -45,6 +45,14 @@ async function players(req, res, next) {
   }
 }
 
+async function leagues(req, res, next) {
+  try {
+    res.json({ leagues: await searchService.listLeagues() });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function venues(req, res, next) {
   try {
     res.json({ venues: await searchService.listVenues() });
@@ -53,4 +61,4 @@ async function venues(req, res, next) {
   }
 }
 
-module.exports = { schemas, global, players, venues };
+module.exports = { schemas, global, players, venues, leagues };

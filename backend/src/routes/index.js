@@ -94,6 +94,7 @@ router.get(
   searchController.players,
 );
 router.get('/venues', searchController.venues);
+router.get('/leagues', searchController.leagues);
 
 // Ranking — RF10, RF71, RF80
 router.get('/ranking', validate({ query: rankingController.schemas.list }), rankingController.list);

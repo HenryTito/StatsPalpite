@@ -71,6 +71,11 @@ export const matchRepository = {
     api.get<TeamComparison>('/compare', { query: { homeTeamId, awayTeamId } }),
 
   venues: () => api.get<{ venues: VenueResult[] }>('/venues'),
+
+  leagues: () =>
+    api.get<{ leagues: { id: string; name: string; country: string; season: number }[] }>(
+      '/leagues',
+    ),
 };
 
 export const searchRepository = {

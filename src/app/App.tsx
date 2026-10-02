@@ -8,6 +8,7 @@ import { initSentry } from '../core/observability/sentry';
 import { colors } from '../core/theme';
 import { ErrorBoundary } from '../core/ui';
 import { SessionProvider } from '../modules/auth/SessionContext';
+import { MatchFilterProvider } from '../modules/partidas/FilterContext';
 
 // Antes de qualquer render, para capturar erro de inicialização (RNF08).
 initSentry();
@@ -20,7 +21,9 @@ export default function App() {
         <ErrorBoundary>
           <I18nProvider>
             <SessionProvider>
-              <RootNavigator />
+              <MatchFilterProvider>
+                <RootNavigator />
+              </MatchFilterProvider>
             </SessionProvider>
           </I18nProvider>
         </ErrorBoundary>

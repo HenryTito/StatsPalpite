@@ -24,16 +24,33 @@ const SIMILARITY_THRESHOLD = 0.2;
  * requisição — e os valores vão por bind, então não há injeção possível.
  */
 async function searchTable(table, term, limit) {
+  /**
+   * A nota combina três sinais, em ordem de importância:
+   *
+   *   +2  o nome COMEÇA com o termo
+   *   +1  o nome CONTÉM o termo
+   *   0–1 similaridade por trigrama
+   *
+   * Só a similaridade não basta. Buscando "corint", o trigrama dava 0,250 a
+   * "Coritiba FBC" e 0,240 a "SC Corinthians Paulista" — ou seja, colocava na
+   * frente justamente o time que NÃO contém o que foi digitado, porque nomes
+   * longos diluem a medida. A correspondência literal precisa pesar mais.
+   */
   return sequelize.query(
     `
+      WITH needle AS (SELECT immutable_unaccent(lower(:term)) AS term)
       SELECT
         id,
         name,
-        similarity(immutable_unaccent(lower(name)), immutable_unaccent(lower(:term))) AS score
+        CASE WHEN immutable_unaccent(lower(name)) LIKE (SELECT term FROM needle) || '%'
+             THEN 2 ELSE 0 END
+        + CASE WHEN immutable_unaccent(lower(name)) LIKE '%' || (SELECT term FROM needle) || '%'
+             THEN 1 ELSE 0 END
+        + similarity(immutable_unaccent(lower(name)), (SELECT term FROM needle)) AS score
       FROM ${table}
-      WHERE immutable_unaccent(lower(name)) ILIKE '%' || immutable_unaccent(lower(:term)) || '%'
-         OR similarity(immutable_unaccent(lower(name)), immutable_unaccent(lower(:term))) > :threshold
-      ORDER BY score DESC, name ASC
+      WHERE immutable_unaccent(lower(name)) ILIKE '%' || (SELECT term FROM needle) || '%'
+         OR similarity(immutable_unaccent(lower(name)), (SELECT term FROM needle)) > :threshold
+      ORDER BY score DESC, length(name) ASC, name ASC
       LIMIT :limit
     `,
     {
@@ -138,6 +155,18 @@ async function searchPlayers({ q, limit = 10 }) {
   return { query: term, total: results.length, results };
 }
 
+/** Ligas disponíveis, usadas no filtro da lista de partidas (RF16). */
+async function listLeagues() {
+  const leagues = await League.findAll({ order: [['name', 'ASC']] });
+
+  return leagues.map((league) => ({
+    id: league.id,
+    name: league.name,
+    country: league.country,
+    season: league.season,
+  }));
+}
+
 /** Estádios com coordenadas, base do mapa do RF49. */
 async function listVenues({ limit = 100 } = {}) {
   const venues = await Venue.findAll({
@@ -158,4 +187,11 @@ async function listVenues({ limit = 100 } = {}) {
   }));
 }
 
-module.exports = { searchAll, searchPlayers, listVenues, MIN_QUERY_LENGTH, SIMILARITY_THRESHOLD };
+module.exports = {
+  searchAll,
+  searchPlayers,
+  listVenues,
+  listLeagues,
+  MIN_QUERY_LENGTH,
+  SIMILARITY_THRESHOLD,
+};

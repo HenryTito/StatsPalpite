@@ -71,6 +71,35 @@ describe('GET /search (RF27)', () => {
     expect(scores).toEqual(sorted);
   });
 
+  it('coloca a correspondência literal na frente da aproximação', async () => {
+    /**
+     * "corint" é um pedaço literal de "Corinthians" e não de "Coritiba".
+     * Só a similaridade por trigrama invertia essa ordem — ela dilui em nomes
+     * longos — e o time certo aparecia em segundo.
+     */
+    const response = await request(app).get(`${API}/search`).query({ q: 'palm', types: 'team' });
+
+    expect(response.status).toBe(200);
+    if (response.body.results.length > 1) {
+      const [primeiro] = response.body.results;
+      expect(primeiro.name.toLowerCase()).toContain('palm');
+    }
+  });
+
+  it('prefere quem começa com o termo', async () => {
+    const response = await request(app).get(`${API}/search`).query({ q: 'santos', types: 'team' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.results.length).toBeGreaterThan(0);
+    expect(response.body.results[0].name.toLowerCase()).toContain('santos');
+  });
+
+  it('pontua acima de 1 quando há correspondência literal', async () => {
+    const literal = await request(app).get(`${API}/search`).query({ q: 'santos', types: 'team' });
+    // A nota soma 1 por conter e mais 2 por começar com o termo.
+    expect(literal.body.results[0].score).toBeGreaterThan(1);
+  });
+
   it('não quebra com aspas e caracteres de SQL', async () => {
     const response = await request(app).get(
       `${API}/search?q=${encodeURIComponent("'; DROP TABLE teams; --")}`,

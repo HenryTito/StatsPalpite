@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PartidaCard } from './home/PartidaCard';
@@ -15,25 +15,34 @@ import {
   configureNotifications,
   scheduleKickoffReminder,
 } from '../../modules/notifications/matchNotifications';
+import { useMatchFilter } from '../../modules/partidas/FilterContext';
 import { useForegroundSync } from '../../modules/sync/useForegroundSync';
 import type { RootStackParamList } from '../navigation/types';
-
-const FILTROS = ['all', 'brasileirao', 'filters'] as const;
-type Filtro = (typeof FILTROS)[number];
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { t, formatTime } = useI18n();
 
+  const { filter, clearFilter, activeCount } = useMatchFilter();
+
   const [matches, setMatches] = useState<MatchSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [filtro, setFiltro] = useState<Filtro>('all');
 
+  /**
+   * A filtragem acontece no servidor. O backend já indexa por data, liga,
+   * time e situação; filtrar no app esconderia partidas que sequer chegaram
+   * a ser buscadas, e a lista mudaria conforme a página carregada.
+   */
   const carregar = useCallback(async () => {
     try {
-      const response = await matchRepository.list();
+      const response = await matchRepository.list({
+        date: filter.date ?? undefined,
+        leagueId: filter.leagueId ?? undefined,
+        teamId: filter.teamId ?? undefined,
+        status: filter.status ?? undefined,
+      });
       setMatches(response.matches);
       setError(null);
     } catch (caught) {
@@ -41,7 +50,7 @@ export function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
     carregar();
@@ -87,11 +96,6 @@ export function HomeScreen() {
     setRefreshing(false);
   }, [carregar]);
 
-  const visiveis = useMemo(() => {
-    if (filtro !== 'brasileirao') return matches;
-    return matches.filter((match) => match.league?.name?.toLowerCase().includes('brasileir'));
-  }, [matches, filtro]);
-
   const abrir = (match: MatchSummary) =>
     match.status === 'live'
       ? navigation.navigate('PartidaAoVivo', { partidaId: match.id })
@@ -128,13 +132,27 @@ export function HomeScreen() {
       scroll={false}
       contentStyle={styles.content}
     >
+      <View style={styles.filters}>
+        <Chip label={t('home.all')} selected={activeCount === 0} onPress={clearFilter} />
+        {filter.leagueName ? (
+          <Chip label={filter.leagueName} selected onPress={clearFilter} />
+        ) : null}
+        {filter.teamName ? <Chip label={filter.teamName} selected onPress={clearFilter} /> : null}
+        {filter.date ? <Chip label={filter.date} selected onPress={clearFilter} /> : null}
+        <Chip
+          label={activeCount > 0 ? t('filters.active', { count: activeCount }) : t('home.filters')}
+          selected={activeCount > 0}
+          onPress={() => navigation.navigate('Filtros')}
+        />
+      </View>
+
       <AsyncBoundary
         loading={loading}
         error={error}
         hasData={matches.length > 0}
         onRetry={carregar}
         isEmpty={!loading && matches.length === 0}
-        emptyMessage={t('common.empty')}
+        emptyMessage={activeCount > 0 ? t('filters.noResults') : t('common.empty')}
       >
         <ScrollView
           contentContainerStyle={styles.list}
@@ -143,30 +161,11 @@ export function HomeScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.acc} />
           }
         >
-          <View style={styles.filters}>
-            {FILTROS.map((item) => (
-              <Chip
-                key={item}
-                label={
-                  item === 'all'
-                    ? t('home.all')
-                    : item === 'filters'
-                      ? t('home.filters')
-                      : 'Brasileirão'
-                }
-                selected={item === filtro}
-                onPress={() =>
-                  item === 'filters' ? navigation.navigate('Filtros') : setFiltro(item)
-                }
-              />
-            ))}
-          </View>
-
-          {visiveis.some((match) => match.stale) ? (
+          {matches.some((match) => match.stale) ? (
             <Text style={styles.stale}>{t('home.staleWarning')}</Text>
           ) : null}
 
-          {visiveis.map((match) => (
+          {matches.map((match) => (
             <PartidaCard
               key={match.id}
               partida={toPartida(match, { t, formatTime })}
@@ -186,8 +185,20 @@ export function HomeScreen() {
 const styles = StyleSheet.create({
   content: { padding: 0, gap: 0, flex: 1 },
   actions: { flexDirection: 'row', gap: spacing.lg, alignItems: 'center' },
-  list: { padding: spacing.xl, gap: spacing.md, paddingBottom: spacing.xxxl },
-  filters: { flexDirection: 'row', gap: spacing.sm },
+  list: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    gap: spacing.md,
+    paddingBottom: spacing.xxxl,
+  },
+  filters: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
   stale: { fontSize: 12, color: colors.warn, fontWeight: '600' },
   synced: { fontSize: 11, color: colors.ink3, textAlign: 'center', marginTop: spacing.sm },
 });

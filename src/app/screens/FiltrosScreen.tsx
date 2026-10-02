@@ -1,100 +1,266 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { colors, spacing } from '../../core/theme';
+import { ApiError } from '../../core/api/ApiError';
+import { useAsync } from '../../core/hooks/useAsync';
+import { useI18n } from '../../core/i18n';
+import { colors, radius, spacing } from '../../core/theme';
+import { Badge, BottomBar, Button, Chip, FieldLabel, Icon, Screen, TopBar } from '../../core/ui';
 import {
-  BottomBar,
-  Button,
-  Chip,
-  FieldLabel,
-  Icon,
-  Screen,
-  SelectField,
-  Switch,
-  TopBar,
-} from '../../core/ui';
-import { ligas } from '../../infrastructure/fixtures/partidas';
+  matchRepository,
+  searchRepository,
+} from '../../infrastructure/repositories/apiRepositories';
+import {
+  EMPTY_FILTER,
+  useMatchFilter,
+  type MatchFilter,
+} from '../../modules/partidas/FilterContext';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Filtros'>;
 
+/** Espera o usuário parar de digitar antes de consultar a API. */
+const DEBOUNCE_MS = 350;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Confere se o texto é uma data que existe no calendário.
+ *
+ * O construtor de Date normaliza o excedente — 31 de fevereiro vira 3 de
+ * março — então comparar os campos de volta é o que revela a data impossível.
+ */
+function isRealDate(value: string): boolean {
+  if (!ISO_DATE.test(value)) return false;
+
+  const partes = value.split('-').map(Number);
+  const year = partes[0] ?? 0;
+  const month = partes[1] ?? 0;
+  const day = partes[2] ?? 0;
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  );
+}
+
+const STATUS_OPTIONS = ['scheduled', 'live', 'finished'] as const;
+
 export function FiltrosScreen({ navigation }: Props) {
-  const [ligaSelecionada, setLigaSelecionada] = useState(ligas[0]);
-  const [somenteFavoritas, setSomenteFavoritas] = useState(false);
-  const [comPalpitePendente, setComPalpitePendente] = useState(true);
+  const { t } = useI18n();
+  const { filter, applyFilter, clearFilter } = useMatchFilter();
+
+  // Começa do filtro em vigor: reabrir a tela mostra o que já está aplicado.
+  const [rascunho, setRascunho] = useState<MatchFilter>(filter);
+  const [dataTexto, setDataTexto] = useState(filter.date ?? '');
+  const [buscaTime, setBuscaTime] = useState(filter.teamName ?? '');
+  const [sugestoes, setSugestoes] = useState<{ id: string; name: string }[]>([]);
+  const [buscando, setBuscando] = useState(false);
+
+  const { data: ligasResposta } = useAsync(() => matchRepository.leagues(), []);
+  const ligas = ligasResposta?.leagues ?? [];
+
+  // Busca de times com espera: sem ela, cada tecla vira uma requisição.
+  useEffect(() => {
+    const termo = buscaTime.trim();
+    if (termo.length < 2 || termo === rascunho.teamName) {
+      setSugestoes([]);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setBuscando(true);
+      searchRepository
+        .global(termo, 'team')
+        .then((resposta) =>
+          setSugestoes(resposta.results.slice(0, 5).map((r) => ({ id: r.id, name: r.name }))),
+        )
+        .catch((erro) => {
+          if (!(erro instanceof ApiError)) return;
+          setSugestoes([]);
+        })
+        .finally(() => setBuscando(false));
+    }, DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [buscaTime, rascunho.teamName]);
+
+  const dataInvalida = dataTexto.length > 0 && !isRealDate(dataTexto);
+
+  const aplicar = () => {
+    applyFilter({ ...rascunho, date: dataTexto && !dataInvalida ? dataTexto : null });
+    navigation.goBack();
+  };
 
   const limpar = () => {
-    setLigaSelecionada(ligas[0]);
-    setSomenteFavoritas(false);
-    setComPalpitePendente(false);
-    navigation.goBack();
+    clearFilter();
+    setRascunho(EMPTY_FILTER);
+    setDataTexto('');
+    setBuscaTime('');
+    setSugestoes([]);
   };
 
   return (
     <Screen
-      header={<TopBar title="Filtrar partidas" back="close" onBack={() => navigation.goBack()} />}
+      header={<TopBar title={t('home.filters')} back="close" onBack={() => navigation.goBack()} />}
+      scroll={false}
       contentStyle={styles.content}
       footer={
         <BottomBar row>
-          <Button label="Limpar" variant="secondary" onPress={limpar} style={styles.action} />
-          <Button label="Aplicar" onPress={() => navigation.goBack()} style={styles.action} />
+          <Button
+            label={t('filters.clear')}
+            variant="secondary"
+            onPress={limpar}
+            style={styles.action}
+          />
+          <Button
+            label={t('filters.apply')}
+            onPress={dataInvalida ? undefined : aplicar}
+            disabled={dataInvalida}
+            style={styles.action}
+          />
         </BottomBar>
       }
     >
-      <FieldLabel>Liga</FieldLabel>
-      <View style={styles.chips}>
-        {ligas.map((liga) => (
-          <Chip
-            key={liga}
-            label={liga}
-            selected={liga === ligaSelecionada}
-            onPress={() => setLigaSelecionada(liga)}
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <FieldLabel>{t('filters.league')}</FieldLabel>
+        <View style={styles.chips}>
+          {ligas.map((liga) => (
+            <Chip
+              key={liga.id}
+              label={liga.name}
+              selected={liga.id === rascunho.leagueId}
+              onPress={() =>
+                setRascunho((atual) =>
+                  atual.leagueId === liga.id
+                    ? { ...atual, leagueId: null, leagueName: null }
+                    : { ...atual, leagueId: liga.id, leagueName: liga.name },
+                )
+              }
+            />
+          ))}
+          {ligas.length === 0 ? <Text style={styles.vazio}>{t('common.loading')}</Text> : null}
+        </View>
+
+        <FieldLabel>{t('filters.date')}</FieldLabel>
+        <View style={[styles.input, dataInvalida && styles.inputErro]}>
+          <TextInput
+            style={styles.inputTexto}
+            value={dataTexto}
+            onChangeText={setDataTexto}
+            placeholder="AAAA-MM-DD"
+            placeholderTextColor={colors.ink3}
+            keyboardType="numbers-and-punctuation"
+            maxLength={10}
           />
+          <Icon name="calendar" size={18} color={colors.ink3} />
+        </View>
+        {dataInvalida ? <Text style={styles.erro}>{t('filters.invalidDate')}</Text> : null}
+
+        <FieldLabel>{t('filters.team')}</FieldLabel>
+        <View style={styles.input}>
+          <TextInput
+            style={styles.inputTexto}
+            value={buscaTime}
+            onChangeText={(texto) => {
+              setBuscaTime(texto);
+              // Digitar de novo desfaz a seleção anterior.
+              setRascunho((atual) => ({ ...atual, teamId: null, teamName: null }));
+            }}
+            placeholder={t('filters.searchTeam')}
+            placeholderTextColor={colors.ink3}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {rascunho.teamId ? (
+            <Pressable
+              onPress={() => {
+                setBuscaTime('');
+                setRascunho((atual) => ({ ...atual, teamId: null, teamName: null }));
+              }}
+              hitSlop={8}
+              accessibilityLabel={t('common.close')}
+            >
+              <Icon name="close" size={18} color={colors.ink3} />
+            </Pressable>
+          ) : (
+            <Icon name="search" size={18} color={colors.ink3} />
+          )}
+        </View>
+
+        {rascunho.teamName ? <Badge label={rascunho.teamName} style={styles.selecionado} /> : null}
+
+        {buscando ? <Text style={styles.vazio}>{t('common.loading')}</Text> : null}
+
+        {sugestoes.map((sugestao) => (
+          <Pressable
+            key={sugestao.id}
+            onPress={() => {
+              setRascunho((atual) => ({ ...atual, teamId: sugestao.id, teamName: sugestao.name }));
+              setBuscaTime(sugestao.name);
+              setSugestoes([]);
+            }}
+            style={styles.sugestao}
+          >
+            <Text style={styles.sugestaoTexto}>{sugestao.name}</Text>
+            <Icon name="chevron-right" size={18} color={colors.bd2} strokeWidth={2} />
+          </Pressable>
         ))}
-      </View>
 
-      <SelectField
-        label="Data"
-        value="13 de setembro"
-        right={<Icon name="calendar" size={18} color={colors.ink3} />}
-      />
-
-      <SelectField
-        label="Time"
-        placeholder="Buscar time"
-        right={<Icon name="search" size={18} color={colors.ink3} />}
-      />
-
-      <View style={styles.toggleRow}>
-        <Text style={styles.toggleLabel}>Só partidas favoritas</Text>
-        <Switch
-          value={somenteFavoritas}
-          onValueChange={setSomenteFavoritas}
-          accessibilityLabel="Só partidas favoritas"
-        />
-      </View>
-      <View style={styles.toggleRow}>
-        <Text style={styles.toggleLabel}>Com palpite pendente</Text>
-        <Switch
-          value={comPalpitePendente}
-          onValueChange={setComPalpitePendente}
-          accessibilityLabel="Com palpite pendente"
-        />
-      </View>
+        <FieldLabel>{t('filters.status')}</FieldLabel>
+        <View style={styles.chips}>
+          {STATUS_OPTIONS.map((status) => (
+            <Chip
+              key={status}
+              label={t(`filters.statusOptions.${status}`)}
+              selected={status === rascunho.status}
+              onPress={() =>
+                setRascunho((atual) => ({
+                  ...atual,
+                  status: atual.status === status ? null : status,
+                }))
+              }
+            />
+          ))}
+        </View>
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 14 },
+  content: { padding: 0, gap: 0, flex: 1 },
+  scroll: { padding: spacing.xl, gap: spacing.md, paddingBottom: spacing.xxxl },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  toggleRow: {
+  input: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.bd,
+    borderRadius: radius.lg,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.sm,
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    backgroundColor: colors.sur2,
+    gap: spacing.sm,
   },
-  toggleLabel: { fontSize: 14, fontWeight: '600', color: colors.ink },
+  inputErro: { borderColor: colors.dan },
+  inputTexto: { flex: 1, fontSize: 14, color: colors.ink, padding: 0 },
+  erro: { fontSize: 12, color: colors.dan },
+  vazio: { fontSize: 13, color: colors.ink3 },
+  selecionado: { marginTop: 2 },
+  sugestao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.bd,
+  },
+  sugestaoTexto: { fontSize: 14, color: colors.ink, flex: 1 },
   action: { flex: 1 },
 });
