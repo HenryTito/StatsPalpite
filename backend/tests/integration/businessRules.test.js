@@ -121,7 +121,7 @@ describe('um palpite por usuário por partida', () => {
   });
 });
 
-describe('faixa da aposta (RF09: de 1 a 10 pontos)', () => {
+describe('faixa da aposta (RF08: de 1 a 10 pontos)', () => {
   it.each([0, -1, -500, 11, 100, 1000000])('recusa aposta de %i pontos', async (stake) => {
     await expectRejected(() => Prediction.create(validPrediction({ stake })));
   });
@@ -132,7 +132,7 @@ describe('faixa da aposta (RF09: de 1 a 10 pontos)', () => {
   });
 });
 
-describe('janela de palpite (RF44)', () => {
+describe('janela de palpite (RF41)', () => {
   it('recusa palpite em partida já encerrada', async () => {
     await expectRejected(() => Prediction.create(validPrediction({ matchId: finishedMatch.id })));
   });
@@ -171,7 +171,7 @@ describe('janela de palpite (RF44)', () => {
   });
 });
 
-describe('coerência entre situação e pontuação (RF10)', () => {
+describe('coerência entre situação e pontuação (RF09)', () => {
   it('recusa palpite perdido com pontos creditados', async () => {
     await expectRejected(() =>
       Prediction.create(

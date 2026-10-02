@@ -68,7 +68,7 @@ router.get(
 );
 router.get('/auth/me', authenticate, authController.me);
 
-// Partidas — RF03, RF04, RF06, RF17, RF48
+// Partidas — RF03, RF04, RF06, RF16, RF48
 router.get('/matches', validate({ query: matchController.schemas.list }), matchController.list);
 router.get(
   '/matches/:id',
@@ -95,7 +95,7 @@ router.get(
 );
 router.get('/venues', searchController.venues);
 
-// Ranking — RF11, RF71, RF86
+// Ranking — RF10, RF71, RF80
 router.get('/ranking', validate({ query: rankingController.schemas.list }), rankingController.list);
 router.get('/ranking/me', authenticate, rankingController.myPosition);
 router.get(

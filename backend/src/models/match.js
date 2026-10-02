@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       homeGoals: { type: DataTypes.INTEGER, allowNull: true },
       awayGoals: { type: DataTypes.INTEGER, allowNull: true },
       round: { type: DataTypes.STRING(40), allowNull: true },
-      /** Momento da última ingestão, base para o aviso de dados velhos (RF72). */
+      /** Momento da última ingestão, base para o aviso de dados velhos (RF68). */
       syncedAt: { type: DataTypes.DATE, allowNull: true },
     },
     {

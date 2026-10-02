@@ -17,7 +17,7 @@ const { toPercentages } = require('../utils/percentage');
 /** Quantas partidas entram no destaque do dia. */
 const HIGHLIGHT_LIMIT = 3;
 
-/** Distribuição dos palpites da comunidade para uma partida (RF26). */
+/** Distribuição dos palpites da comunidade para uma partida (RF24). */
 async function predictionBreakdown(matchIds) {
   if (!matchIds.length) return new Map();
 

@@ -61,7 +61,7 @@ async function seedUsers() {
 }
 
 /**
- * Gera palpites para que os agregados do RF53, do RF77 e do RF26 tenham o que
+ * Gera palpites para que os agregados do RF53, do RF77 e do RF24 tenham o que
  * somar. Determinístico pela posição do usuário e da partida, então o seed
  * produz sempre o mesmo cenário.
  */
@@ -94,7 +94,7 @@ async function seedPredictions(users) {
       if (actual) {
         const hit = actual === choice;
         status = hit ? 'won' : 'lost';
-        // Regra do RF10: acerto do vencedor paga 2x a aposta.
+        // Regra do RF09: acerto do vencedor paga 2x a aposta.
         pointsAwarded = hit ? stake * 2 : 0;
         settledAt = match.kickoffAt;
       }

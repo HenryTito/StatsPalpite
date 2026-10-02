@@ -40,7 +40,7 @@ export type MatchSummary = {
   probability: Probability;
   form: { home: string[]; away: string[] };
   syncedAt: string | null;
-  /** RF72: dados com mais de 48 horas sem sincronizar. */
+  /** RF68: dados com mais de 48 horas sem sincronizar. */
   stale: boolean;
 };
 

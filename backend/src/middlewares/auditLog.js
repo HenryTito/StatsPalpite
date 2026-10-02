@@ -4,7 +4,7 @@ const { AuditLog } = require('../models');
 const logger = require('../config/logger');
 
 /**
- * Registra a ação no log de auditoria (RF28).
+ * Registra a ação no log de auditoria (RF25).
  *
  * Grava depois de a resposta sair e só em caso de sucesso: auditoria não pode
  * atrasar nem derrubar a requisição do usuário. Falha ao gravar vira log, não

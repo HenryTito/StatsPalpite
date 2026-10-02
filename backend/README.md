@@ -85,6 +85,6 @@ que vai para produção.
 
 ## Fora do escopo da Sprint 1
 
-O registro de palpite e o cálculo de pontuação (`RF09`, `RF10`) são da
+O registro de palpite e o cálculo de pontuação (`RF08`, `RF09`) são da
 Sprint 2. A tabela `predictions` já existe porque o resumo diário e o ranking
 agregam sobre ela, e o seed a popula para que esses números sejam reais.

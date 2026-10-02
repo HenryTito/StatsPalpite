@@ -10,7 +10,7 @@
  * Cada restrição corresponde a uma regra escrita no documento de requisitos.
  */
 const CHECKS = [
-  // RF09: a aposta simbólica varia de 1 a 10 pontos.
+  // RF08: a aposta simbólica varia de 1 a 10 pontos.
   {
     table: 'predictions',
     name: 'predictions_stake_range',
@@ -31,7 +31,7 @@ const CHECKS = [
       '(predicted_away_goals IS NULL OR predicted_away_goals >= 0)',
   },
   /**
-   * Coerência entre situação e pontuação (RF10):
+   * Coerência entre situação e pontuação (RF09):
    *   pendente   — ainda não apurado, sem pontos e sem data de apuração
    *   ganho      — apurado, com pontos acima de zero
    *   perdido    — apurado, com zero ponto
@@ -77,7 +77,7 @@ const CHECKS = [
 ];
 
 /**
- * Impede palpite em partida que já começou (RF44, por simetria com o
+ * Impede palpite em partida que já começou (RF41, por simetria com o
  * cancelamento). É cruzamento entre tabelas, então não cabe num CHECK — e
  * um gatilho é o único jeito de garantir isso mesmo contra escrita direta.
  *

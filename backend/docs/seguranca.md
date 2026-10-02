@@ -93,7 +93,7 @@ estar atrás de HTTPS, que é o que o **RNF07** exige.
 
 Cada login, logout, pedido de redefinição, visualização de estatística e ação
 administrativa vira uma linha em `audit_logs`, com usuário, IP e recurso
-(**RF28**). A gravação acontece depois da resposta sair e nunca derruba a
+(**RF25**). A gravação acontece depois da resposta sair e nunca derruba a
 requisição: auditoria que atrasa o usuário acaba desligada.
 
 ## O que fica para as próximas sprints
