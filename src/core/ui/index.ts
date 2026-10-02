@@ -1,3 +1,9 @@
+export { AsyncBoundary } from './AsyncBoundary';
+export { ComparisonPanel } from './ComparisonPanel';
+export type { ComparisonMetric } from './ComparisonPanel';
+export { ErrorBoundary } from './ErrorBoundary';
+export { LineChart } from './LineChart';
+export type { ChartPoint } from './LineChart';
 export { Badge } from './Badge';
 export type { BadgeTone } from './Badge';
 export { BottomBar } from './BottomBar';

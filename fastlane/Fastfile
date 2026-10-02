@@ -1,0 +1,108 @@
+# Automação de build e assinatura do APK (RNF09).
+#
+# O projeto usa geração nativa do Expo (a pasta android/ não é versionada),
+# então toda lane roda `expo prebuild` antes do Gradle. Isso mantém uma única
+# fonte de verdade — app.json — para ícone, permissões e versão.
+
+default_platform(:android)
+
+APP_MODULE = "app"
+PROJECT_ROOT = File.expand_path("..", __dir__)
+ANDROID_DIR = File.join(PROJECT_ROOT, "android")
+
+platform :android do
+  desc "Gera os arquivos nativos a partir do app.json"
+  lane :prebuild do
+    sh("cd #{PROJECT_ROOT} && npx expo prebuild --platform android --no-install")
+  end
+
+  desc "Verificações que precedem qualquer build: tipos, lint e testes"
+  lane :verify do
+    sh("cd #{PROJECT_ROOT} && npm run type-check")
+    sh("cd #{PROJECT_ROOT} && npm run lint")
+    sh("cd #{PROJECT_ROOT} && npm test -- --ci")
+  end
+
+  desc "APK de teste, assinado com a chave de debug"
+  lane :build_test do
+    verify
+    prebuild
+    gradle(
+      project_dir: ANDROID_DIR,
+      task: "assemble",
+      build_type: "Debug",
+      flags: "--no-daemon",
+    )
+    UI.success("APK de teste em android/app/build/outputs/apk/debug/")
+  end
+
+  desc "APK de produção, assinado com a chave de release"
+  lane :build_release do
+    verify
+    ensure_keystore
+    prebuild
+    gradle(
+      project_dir: ANDROID_DIR,
+      task: "assemble",
+      build_type: "Release",
+      flags: "--no-daemon",
+      properties: {
+        "android.injected.signing.store.file" => ENV.fetch("ANDROID_KEYSTORE_PATH"),
+        "android.injected.signing.store.password" => ENV.fetch("ANDROID_KEYSTORE_PASSWORD"),
+        "android.injected.signing.key.alias" => ENV.fetch("ANDROID_KEY_ALIAS"),
+        "android.injected.signing.key.password" => ENV.fetch("ANDROID_KEY_PASSWORD"),
+      },
+    )
+    UI.success("APK de produção em android/app/build/outputs/apk/release/")
+  end
+
+  desc "AAB de produção, formato exigido pela Play Store"
+  lane :bundle_release do
+    verify
+    ensure_keystore
+    prebuild
+    gradle(
+      project_dir: ANDROID_DIR,
+      task: "bundle",
+      build_type: "Release",
+      flags: "--no-daemon",
+      properties: {
+        "android.injected.signing.store.file" => ENV.fetch("ANDROID_KEYSTORE_PATH"),
+        "android.injected.signing.store.password" => ENV.fetch("ANDROID_KEYSTORE_PASSWORD"),
+        "android.injected.signing.key.alias" => ENV.fetch("ANDROID_KEY_ALIAS"),
+        "android.injected.signing.key.password" => ENV.fetch("ANDROID_KEY_PASSWORD"),
+      },
+    )
+  end
+
+  desc "Cria o keystore de release, se ainda não existir"
+  lane :create_keystore do
+    path = ENV.fetch("ANDROID_KEYSTORE_PATH", File.join(PROJECT_ROOT, "statspalpite-release.keystore"))
+    if File.exist?(path)
+      UI.important("Keystore já existe em #{path}; nada a fazer.")
+      next
+    end
+
+    # O keytool vem com o JDK; em máquina sem JDK próprio, o do Android Studio serve.
+    keytool = ENV["JAVA_HOME"] ? File.join(ENV["JAVA_HOME"], "bin", "keytool") : "keytool"
+    sh([
+      keytool, "-genkeypair", "-v",
+      "-keystore", path,
+      "-alias", ENV.fetch("ANDROID_KEY_ALIAS", "statspalpite"),
+      "-keyalg", "RSA", "-keysize", "2048", "-validity", "10000",
+      "-storepass", ENV.fetch("ANDROID_KEYSTORE_PASSWORD"),
+      "-keypass", ENV.fetch("ANDROID_KEY_PASSWORD"),
+      "-dname", "CN=StatsPalpite, OU=Mobile, O=StatsPalpite, L=Sao Paulo, S=SP, C=BR",
+    ].join(" "))
+
+    UI.success("Keystore criado em #{path}. Guarde-o fora do repositório.")
+  end
+
+  desc "Confere se as variáveis de assinatura estão definidas"
+  private_lane :ensure_keystore do
+    %w[ANDROID_KEYSTORE_PATH ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD].each do |key|
+      UI.user_error!("Variável #{key} não definida. Veja fastlane/README.md.") if ENV[key].to_s.empty?
+    end
+    UI.user_error!("Keystore não encontrado em #{ENV['ANDROID_KEYSTORE_PATH']}") unless File.exist?(ENV["ANDROID_KEYSTORE_PATH"])
+  end
+end

@@ -1,0 +1,79 @@
+'use strict';
+
+const path = require('path');
+
+require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
+
+/** Lê uma variável obrigatória, falhando cedo quando ela não existe. */
+function required(name, fallback) {
+  const value = process.env[name] ?? fallback;
+  if (value === undefined || value === '') {
+    throw new Error(`Variável de ambiente ausente: ${name}`);
+  }
+  return value;
+}
+
+function int(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isNaN(parsed)) {
+    throw new Error(`Variável de ambiente ${name} deve ser um número inteiro`);
+  }
+  return parsed;
+}
+
+const nodeEnv = process.env.NODE_ENV || 'development';
+const isTest = nodeEnv === 'test';
+
+module.exports = {
+  nodeEnv,
+  isTest,
+  isProduction: nodeEnv === 'production',
+  port: int('PORT', 3333),
+  appUrl: process.env.APP_URL || 'http://localhost:3333',
+
+  database: {
+    host: process.env.DB_HOST || '127.0.0.1',
+    port: int('DB_PORT', 5432),
+    name: isTest ? process.env.DB_NAME_TEST || 'statspalpite_test' : process.env.DB_NAME || 'statspalpite',
+    user: process.env.DB_USER || 'statspalpite',
+    password: process.env.DB_PASS || 'statspalpite',
+  },
+
+  auth: {
+    jwtSecret: required('JWT_SECRET', 'segredo-de-desenvolvimento'),
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '15m',
+    refreshTokenDays: int('REFRESH_TOKEN_EXPIRES_IN_DAYS', 30),
+    passwordResetMinutes: int('PASSWORD_RESET_EXPIRES_IN_MINUTES', 15),
+    /** Idade mínima exigida pelo RF31. */
+    minimumAge: 18,
+  },
+
+  mail: {
+    host: process.env.SMTP_HOST || '',
+    port: int('SMTP_PORT', 587),
+    user: process.env.SMTP_USER || '',
+    password: process.env.SMTP_PASS || '',
+    from: process.env.MAIL_FROM || 'StatsPalpite <nao-responda@statspalpite.app>',
+  },
+
+  providers: {
+    /** Qual adapter responde primeiro; o secundário atende o fallback do RNF11. */
+    primary: process.env.FOOTBALL_PRIMARY || 'local',
+    secondary: process.env.FOOTBALL_SECONDARY || 'local',
+    apiFootballKey: process.env.API_FOOTBALL_KEY || '',
+    footballDataKey: process.env.FOOTBALL_DATA_KEY || '',
+    openWeatherKey: process.env.OPENWEATHERMAP_KEY || '',
+  },
+
+  cache: {
+    matches: int('CACHE_TTL_MATCHES', 300),
+    statistics: int('CACHE_TTL_STATISTICS', 900),
+    weather: int('CACHE_TTL_WEATHER', 1800),
+    injuries: int('CACHE_TTL_INJURIES', 3600),
+    referee: int('CACHE_TTL_REFEREE', 86400),
+  },
+
+  sentryDsn: process.env.SENTRY_DSN || '',
+};

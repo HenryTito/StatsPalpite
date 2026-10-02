@@ -28,7 +28,10 @@
       "edgeToEdgeEnabled": true
     },
     "plugins": [
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-secure-store",
+      "expo-localization",
+      "@sentry/react-native"
     ],
     "web": {
       "bundler": "metro",
