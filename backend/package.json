@@ -14,7 +14,9 @@
     "db:reset": "sequelize-cli db:drop && sequelize-cli db:create && sequelize-cli db:migrate && npm run db:seed",
     "test": "NODE_ENV=test jest --runInBand",
     "test:watch": "NODE_ENV=test jest --runInBand --watch",
-    "lint": "eslint src tests --ext .js"
+    "lint": "eslint src tests --ext .js",
+    "lint:fix": "eslint src tests --ext .js --fix",
+    "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\" \"docs/**/*.md\""
   },
   "dependencies": {
     "@sentry/node": "^8.55.2",

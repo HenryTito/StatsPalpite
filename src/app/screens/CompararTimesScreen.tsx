@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ApiError } from '../../core/api/ApiError';
 import { useAsync } from '../../core/hooks/useAsync';
 import { useI18n } from '../../core/i18n';
 import { colors, spacing } from '../../core/theme';
@@ -31,7 +32,10 @@ export function CompararTimesScreen({ navigation, route }: Props) {
   const awayTeamId = route.params?.visitante ?? '';
 
   const { data, loading, error, reload } = useAsync(
-    () => matchRepository.compare(homeTeamId, awayTeamId),
+    () =>
+      homeTeamId && awayTeamId
+        ? matchRepository.compare(homeTeamId, awayTeamId)
+        : Promise.reject(new ApiError('Selecione dois times', 400, 'MISSING_TEAMS')),
     [homeTeamId, awayTeamId],
   );
 

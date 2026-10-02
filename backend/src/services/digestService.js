@@ -5,6 +5,7 @@ const { Op, fn, col, literal } = require('sequelize');
 const { Match, League, Team, Prediction, User } = require('../models');
 const matchService = require('./matchService');
 const rankingService = require('./rankingService');
+const { toPercentages } = require('../utils/percentage');
 
 /**
  * Resumo diário (RF53) e boletim da rodada anterior (RF77).
@@ -36,14 +37,10 @@ async function predictionBreakdown(matchIds) {
     byMatch.set(row.matchId, entry);
   });
 
-  // Converte contagem em percentual, que é o que a tela mostra.
+  // Converte contagem em percentual fechando exatamente em 100.
   byMatch.forEach((entry) => {
     if (!entry.total) return;
-    entry.percentages = {
-      home: Math.round((entry.home / entry.total) * 100),
-      draw: Math.round((entry.draw / entry.total) * 100),
-      away: Math.round((entry.away / entry.total) * 100),
-    };
+    entry.percentages = toPercentages({ home: entry.home, draw: entry.draw, away: entry.away });
   });
 
   return byMatch;
@@ -136,7 +133,14 @@ async function getPreviousRoundBulletin({ days = 7 } = {}) {
         where: { matchId: { [Op.in]: matchIds }, status: { [Op.in]: ['won', 'lost'] } },
         include: [
           { model: User, as: 'user', attributes: ['id', 'username'] },
-          { model: Match, as: 'match', include: [{ model: Team, as: 'homeTeam' }, { model: Team, as: 'awayTeam' }] },
+          {
+            model: Match,
+            as: 'match',
+            include: [
+              { model: Team, as: 'homeTeam' },
+              { model: Team, as: 'awayTeam' },
+            ],
+          },
         ],
         order: [[literal('COALESCE(points_awarded, 0)'), 'DESC']],
         limit: 100,

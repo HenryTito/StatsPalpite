@@ -21,7 +21,9 @@ function audit(action, resourceResolver = null) {
         resource: resourceResolver ? resourceResolver(req) : req.originalUrl,
         ipAddress: req.ip,
         metadata: { method: req.method, status: res.statusCode },
-      }).catch((error) => logger.warn('falha ao gravar auditoria', { action, error: error.message }));
+      }).catch((error) =>
+        logger.warn('falha ao gravar auditoria', { action, error: error.message }),
+      );
     });
 
     next();

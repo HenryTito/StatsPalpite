@@ -16,7 +16,11 @@ module.exports = (sequelize, DataTypes) => {
       ipAddress: { type: DataTypes.STRING(64), allowNull: true },
       metadata: { type: DataTypes.JSONB, allowNull: true },
     },
-    { tableName: 'audit_logs', updatedAt: false, indexes: [{ fields: ['user_id'] }, { fields: ['action'] }] },
+    {
+      tableName: 'audit_logs',
+      updatedAt: false,
+      indexes: [{ fields: ['user_id'] }, { fields: ['action'] }],
+    },
   );
 
   return AuditLog;

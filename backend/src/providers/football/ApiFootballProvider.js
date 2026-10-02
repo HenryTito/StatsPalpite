@@ -40,7 +40,9 @@ class ApiFootballProvider extends FootballProvider {
     const body = await getJson(url.toString(), { headers: this.headers, provider: this.name });
     // A API responde 200 com a lista de erros preenchida; sem isto, falhas passam batido.
     const errors = body?.errors;
-    const hasErrors = Array.isArray(errors) ? errors.length > 0 : errors && Object.keys(errors).length > 0;
+    const hasErrors = Array.isArray(errors)
+      ? errors.length > 0
+      : errors && Object.keys(errors).length > 0;
     if (hasErrors) {
       throw new ProviderError(this.name, `erro da fonte: ${JSON.stringify(errors)}`);
     }
@@ -86,7 +88,11 @@ class ApiFootballProvider extends FootballProvider {
   async fetchPlayers() {
     const players = [];
     for (const leagueId of this.leagueIds) {
-      const response = await this.request('/players', { league: leagueId, season: this.season, page: 1 });
+      const response = await this.request('/players', {
+        league: leagueId,
+        season: this.season,
+        page: 1,
+      });
       response.forEach((entry) => players.push(translator.toPlayer(entry)));
     }
     return players;

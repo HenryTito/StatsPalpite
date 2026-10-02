@@ -3,11 +3,12 @@
 const { z } = require('zod');
 
 const rankingService = require('../services/rankingService');
+const { offset } = require('../utils/validators');
 
 const schemas = {
   list: z.object({
     limit: z.coerce.number().int().positive().max(100).optional(),
-    offset: z.coerce.number().int().min(0).optional(),
+    offset: offset.optional(),
   }),
   history: z.object({ days: z.coerce.number().int().positive().max(365).optional() }),
 };

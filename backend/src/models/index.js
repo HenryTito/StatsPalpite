@@ -5,7 +5,8 @@ const path = require('path');
 const { Sequelize, DataTypes } = require('sequelize');
 
 const env = require('../config/env');
-const config = require('../config/sequelize')[env.nodeEnv] || require('../config/sequelize').development;
+const config =
+  require('../config/sequelize')[env.nodeEnv] || require('../config/sequelize').development;
 
 const sequelize = new Sequelize(config.database, config.username, config.password, config);
 

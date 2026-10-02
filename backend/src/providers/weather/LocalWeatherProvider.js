@@ -2,7 +2,13 @@
 
 const WeatherProvider = require('./WeatherProvider');
 
-const CONDITIONS = ['Céu limpo', 'Parcialmente nublado', 'Nublado', 'Chuva fraca', 'Chuva moderada'];
+const CONDITIONS = [
+  'Céu limpo',
+  'Parcialmente nublado',
+  'Nublado',
+  'Chuva fraca',
+  'Chuva moderada',
+];
 
 /**
  * Previsão local determinística: a mesma coordenada no mesmo horário devolve
@@ -20,7 +26,9 @@ class LocalWeatherProvider extends WeatherProvider {
     const moment = at instanceof Date ? at : new Date(at);
     // Semente a partir da coordenada e do dia: estável, mas variada.
     const seed = Math.abs(
-      Math.round(Number(latitude) * 100) + Math.round(Number(longitude) * 100) + moment.getUTCDate(),
+      Math.round(Number(latitude) * 100) +
+        Math.round(Number(longitude) * 100) +
+        moment.getUTCDate(),
     );
     const condition = CONDITIONS[seed % CONDITIONS.length];
     // Hemisfério sul fica mais quente; aproximação suficiente para a previsão.

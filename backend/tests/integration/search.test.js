@@ -82,7 +82,9 @@ describe('GET /search (RF27)', () => {
 
 describe('GET /search/players (RF56)', () => {
   it('devolve estatísticas individuais do atleta', async () => {
-    const list = await request(app).get(`${API}/search?q=a&limit=5`).catch(() => null);
+    const list = await request(app)
+      .get(`${API}/search?q=a&limit=5`)
+      .catch(() => null);
     // Busca por uma letra comum do dataset de nomes.
     const response = await request(app).get(`${API}/search/players?q=silva`);
 

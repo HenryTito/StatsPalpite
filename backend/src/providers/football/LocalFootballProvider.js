@@ -56,9 +56,10 @@ class LocalFootballProvider extends FootballProvider {
 
   async fetchStatistics(matchExternalIds = null) {
     // null pede todas; uma lista (mesmo vazia) restringe ao que ela contém.
-    const wanted = matchExternalIds === null || matchExternalIds === undefined
-      ? null
-      : new Set(matchExternalIds);
+    const wanted =
+      matchExternalIds === null || matchExternalIds === undefined
+        ? null
+        : new Set(matchExternalIds);
     return this.raw.estatisticas
       .filter((stat) => !wanted || wanted.has(stat.fixture_id))
       .map(translator.toStatistics);

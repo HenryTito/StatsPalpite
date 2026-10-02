@@ -49,9 +49,10 @@ function getIngestionEngine() {
     const primary = buildFootballProvider(env.providers.primary);
     const secondaryKind = env.providers.secondary;
     // Secundária igual à primária não é fallback; é o mesmo ponto de falha.
-    const secondary = secondaryKind && secondaryKind !== env.providers.primary
-      ? buildFootballProvider(secondaryKind)
-      : new LocalFootballProvider();
+    const secondary =
+      secondaryKind && secondaryKind !== env.providers.primary
+        ? buildFootballProvider(secondaryKind)
+        : new LocalFootballProvider();
 
     engine = new IngestionEngine({
       primary,

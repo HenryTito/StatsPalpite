@@ -3,7 +3,11 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('users', {
-      id: { type: Sequelize.UUID, primaryKey: true, defaultValue: Sequelize.literal('gen_random_uuid()') },
+      id: {
+        type: Sequelize.UUID,
+        primaryKey: true,
+        defaultValue: Sequelize.literal('gen_random_uuid()'),
+      },
       email: { type: Sequelize.STRING(160), allowNull: false, unique: true },
       username: { type: Sequelize.STRING(24), allowNull: false, unique: true },
       password_hash: { type: Sequelize.STRING, allowNull: false },
@@ -21,7 +25,11 @@ module.exports = {
     await queryInterface.addIndex('users', ['points'], { name: 'users_points_idx' });
 
     await queryInterface.createTable('refresh_tokens', {
-      id: { type: Sequelize.UUID, primaryKey: true, defaultValue: Sequelize.literal('gen_random_uuid()') },
+      id: {
+        type: Sequelize.UUID,
+        primaryKey: true,
+        defaultValue: Sequelize.literal('gen_random_uuid()'),
+      },
       user_id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -35,10 +43,16 @@ module.exports = {
       created_at: { type: Sequelize.DATE, allowNull: false },
       updated_at: { type: Sequelize.DATE, allowNull: false },
     });
-    await queryInterface.addIndex('refresh_tokens', ['user_id'], { name: 'refresh_tokens_user_idx' });
+    await queryInterface.addIndex('refresh_tokens', ['user_id'], {
+      name: 'refresh_tokens_user_idx',
+    });
 
     await queryInterface.createTable('password_resets', {
-      id: { type: Sequelize.UUID, primaryKey: true, defaultValue: Sequelize.literal('gen_random_uuid()') },
+      id: {
+        type: Sequelize.UUID,
+        primaryKey: true,
+        defaultValue: Sequelize.literal('gen_random_uuid()'),
+      },
       user_id: {
         type: Sequelize.UUID,
         allowNull: false,

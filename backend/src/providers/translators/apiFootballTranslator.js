@@ -139,4 +139,14 @@ function toInjury(raw) {
   };
 }
 
-module.exports = { STATUS_MAP, statsToMap, toLeague, toVenue, toTeam, toPlayer, toMatch, toStatistics, toInjury };
+module.exports = {
+  STATUS_MAP,
+  statsToMap,
+  toLeague,
+  toVenue,
+  toTeam,
+  toPlayer,
+  toMatch,
+  toStatistics,
+  toInjury,
+};

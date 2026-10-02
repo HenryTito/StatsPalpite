@@ -37,11 +37,7 @@ const BLOCKED_TERMS = [
 
 /** Normaliza para comparação: minúsculas, sem acento e sem separadores. */
 function normalize(value) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[._]/g, '');
+  return value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[._]/g, '');
 }
 
 /**

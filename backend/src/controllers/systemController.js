@@ -1,5 +1,7 @@
 'use strict';
 
+const { z } = require('zod');
+
 const { sequelize } = require('../models');
 const { getIngestionEngine } = require('../providers');
 const ingestionService = require('../services/ingestionService');
@@ -26,10 +28,15 @@ async function health(req, res) {
   });
 }
 
+/** Janela de sincronização, em dias. O teto evita varrer anos de histórico. */
+const syncQuerySchema = z.object({
+  days: z.coerce.number().int().positive().max(365).optional(),
+});
+
 /** Dispara a sincronização com a fonte externa. Restrita a administradores. */
 async function sync(req, res, next) {
   try {
-    const days = Number(req.query.days) || 30;
+    const days = req.validatedQuery?.days ?? 30;
     const from = new Date();
     from.setUTCDate(from.getUTCDate() - days);
     const to = new Date();
@@ -50,4 +57,4 @@ async function snapshotRanking(req, res, next) {
   }
 }
 
-module.exports = { health, sync, snapshotRanking };
+module.exports = { health, sync, snapshotRanking, syncQuerySchema };

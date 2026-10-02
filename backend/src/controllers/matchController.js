@@ -3,24 +3,32 @@
 const { z } = require('zod');
 
 const matchService = require('../services/matchService');
+const { isoDate, offset } = require('../utils/validators');
 
 const schemas = {
   list: z.object({
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    date: isoDate.optional(),
     leagueId: z.string().uuid().optional(),
     teamId: z.string().uuid().optional(),
     status: z.enum(['scheduled', 'live', 'finished', 'postponed', 'cancelled']).optional(),
     limit: z.coerce.number().int().positive().max(100).optional(),
-    offset: z.coerce.number().int().min(0).optional(),
+    offset: offset.optional(),
   }),
 
   detail: z.object({ id: z.string().uuid('Identificador de partida inválido') }),
 
-  compare: z.object({
-    homeTeamId: z.string().uuid(),
-    awayTeamId: z.string().uuid(),
-    limit: z.coerce.number().int().positive().max(50).optional(),
-  }),
+  compare: z
+    .object({
+      homeTeamId: z.string().uuid(),
+      awayTeamId: z.string().uuid(),
+      limit: z.coerce.number().int().positive().max(50).optional(),
+    })
+    // Comparar um time consigo mesmo devolveria um retrospecto vazio e barras
+    // em 50/50, o que parece dado real e não é.
+    .refine((query) => query.homeTeamId !== query.awayTeamId, {
+      message: 'Selecione dois times diferentes',
+      path: ['awayTeamId'],
+    }),
 };
 
 async function list(req, res, next) {

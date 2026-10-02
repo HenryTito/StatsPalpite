@@ -9,7 +9,11 @@ module.exports = (sequelize, DataTypes) => {
       teamId: { type: DataTypes.UUID, allowNull: false },
       /** Texto da fonte externa, normalizado pela camada anticorrupção. */
       reason: { type: DataTypes.STRING(160), allowNull: false },
-      status: { type: DataTypes.ENUM('out', 'doubtful', 'suspended'), allowNull: false, defaultValue: 'out' },
+      status: {
+        type: DataTypes.ENUM('out', 'doubtful', 'suspended'),
+        allowNull: false,
+        defaultValue: 'out',
+      },
       reportedAt: { type: DataTypes.DATE, allowNull: false },
       expectedReturnAt: { type: DataTypes.DATEONLY, allowNull: true },
     },

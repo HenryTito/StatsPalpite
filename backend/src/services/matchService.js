@@ -2,7 +2,16 @@
 
 const { Op } = require('sequelize');
 
-const { Match, League, Team, Venue, Referee, MatchStatistic, Injury, Player } = require('../models');
+const {
+  Match,
+  League,
+  Team,
+  Venue,
+  Referee,
+  MatchStatistic,
+  Injury,
+  Player,
+} = require('../models');
 const AppError = require('../utils/AppError');
 const probabilityService = require('./probabilityService');
 const { getWeatherProvider } = require('../providers');
@@ -52,7 +61,13 @@ async function recentForm(teamId, { before = new Date(), limit = FORM_WINDOW } =
   });
 }
 
-/** Retrospecto do confronto direto, nos dois sentidos de mando (RF06). */
+/**
+ * Retrospecto do confronto direto, nos dois sentidos de mando (RF06).
+ *
+ * O `limit` recorta apenas a LISTA devolvida, nunca a contagem: truncar o
+ * retrospecto faria a tela anunciar "10 confrontos" para um par que se
+ * enfrentou 20 vezes, e o número exibido estaria errado.
+ */
 async function headToHead(homeTeamId, awayTeamId, { before = new Date(), limit = null } = {}) {
   const matches = await Match.findAll({
     where: {
@@ -65,7 +80,6 @@ async function headToHead(homeTeamId, awayTeamId, { before = new Date(), limit =
     },
     include: MATCH_INCLUDES,
     order: [['kickoffAt', 'DESC']],
-    ...(limit ? { limit } : {}),
   });
 
   const tally = { homeWins: 0, draws: 0, awayWins: 0, played: matches.length };
@@ -86,7 +100,12 @@ async function headToHead(homeTeamId, awayTeamId, { before = new Date(), limit =
     else tally.draws += 1;
   });
 
-  return { tally, goals: { for: homeGoalsFor, against: homeGoalsAgainst }, matches };
+  return {
+    tally,
+    goals: { for: homeGoalsFor, against: homeGoalsAgainst },
+    // A contagem acima considera todos os confrontos; a lista é a recortada.
+    matches: limit ? matches.slice(0, limit) : matches,
+  };
 }
 
 /** Resumo de uma partida, com a probabilidade preliminar do RF03. */
@@ -118,7 +137,9 @@ async function summarize(match) {
     awayTeam: match.awayTeam
       ? { id: match.awayTeam.id, name: match.awayTeam.name, shortName: match.awayTeam.shortName }
       : null,
-    venue: match.venue ? { id: match.venue.id, name: match.venue.name, city: match.venue.city } : null,
+    venue: match.venue
+      ? { id: match.venue.id, name: match.venue.name, city: match.venue.city }
+      : null,
     kickoffAt: match.kickoffAt,
     status: match.status,
     minute: match.minute,

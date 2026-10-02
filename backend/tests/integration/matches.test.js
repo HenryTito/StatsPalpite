@@ -132,9 +132,7 @@ describe('GET /matches/:id (RF04)', () => {
   });
 
   it('responde 404 para partida inexistente', async () => {
-    const response = await request(app).get(
-      `${API}/matches/00000000-0000-4000-8000-000000000000`,
-    );
+    const response = await request(app).get(`${API}/matches/00000000-0000-4000-8000-000000000000`);
     expect(response.status).toBe(404);
   });
 
@@ -155,9 +153,7 @@ describe('GET /compare (RF06, RF37)', () => {
   });
 
   it('devolve retrospecto, forma e histórico', async () => {
-    const response = await request(app).get(
-      `${API}/compare?homeTeamId=${home}&awayTeamId=${away}`,
-    );
+    const response = await request(app).get(`${API}/compare?homeTeamId=${home}&awayTeamId=${away}`);
 
     expect(response.status).toBe(200);
     expect(response.body.record).toHaveProperty('homeWins');
@@ -167,9 +163,7 @@ describe('GET /compare (RF06, RF37)', () => {
   });
 
   it('conta o retrospecto nos dois sentidos de mando', async () => {
-    const response = await request(app).get(
-      `${API}/compare?homeTeamId=${home}&awayTeamId=${away}`,
-    );
+    const response = await request(app).get(`${API}/compare?homeTeamId=${home}&awayTeamId=${away}`);
     const { homeWins, draws, awayWins, played } = response.body.record;
 
     expect(homeWins + draws + awayWins).toBe(played);
@@ -183,6 +177,31 @@ describe('GET /compare (RF06, RF37)', () => {
     expect(inverse.body.record.homeWins).toBe(direct.body.record.awayWins);
     expect(inverse.body.record.awayWins).toBe(direct.body.record.homeWins);
     expect(inverse.body.record.draws).toBe(direct.body.record.draws);
+  });
+
+  it('conta TODOS os confrontos, mesmo devolvendo uma lista menor', async () => {
+    const { Match } = require('../../src/models');
+    const { Op } = require('sequelize');
+
+    const total = await Match.count({
+      where: {
+        status: 'finished',
+        [Op.or]: [
+          { homeTeamId: home, awayTeamId: away },
+          { homeTeamId: away, awayTeamId: home },
+        ],
+      },
+    });
+
+    const response = await request(app).get(
+      `${API}/compare?homeTeamId=${home}&awayTeamId=${away}&limit=3`,
+    );
+
+    // O recorte vale para a lista exibida...
+    expect(response.body.history.length).toBeLessThanOrEqual(3);
+    // ...mas o retrospecto precisa refletir o histórico inteiro.
+    expect(response.body.record.played).toBe(total);
+    expect(total).toBeGreaterThan(3);
   });
 
   it('responde 404 quando um dos times não existe', async () => {

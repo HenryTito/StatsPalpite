@@ -93,6 +93,27 @@ verificado. Pontos e horas vêm da planilha `backlog-statspalpite`.
    estavam fixas em português e apareciam em meio à interface em inglês. O
    adaptador `toPartida` passou a receber o tradutor da tela.
 
+## Auditoria de segurança
+
+Uma rodada adversarial contra a API no ar encontrou sete problemas, todos
+corrigidos e cobertos por teste. O detalhamento está em
+`backend/docs/seguranca.md`.
+
+| # | Problema | Gravidade |
+|---|---|---|
+| 1 | `trust proxy` ligado sem proxy: forjar `X-Forwarded-For` burlava o limite de tentativas de login | alta — força bruta sem teto |
+| 2 | Token de redefinição de senha devolvido no corpo da resposta sempre que `NODE_ENV` não fosse `production` | alta — tomada de conta |
+| 3 | `JWT_SECRET` com valor padrão: subir sem a variável aceitava tokens assinados por qualquer um | alta |
+| 4 | Enumeração de contas por tempo de resposta: hash de reserva malformado respondia em 0 ms contra 55 ms de uma conta real | média |
+| 5 | Datas com formato válido e inexistentes no calendário derrubavam a consulta com 500 | média — indisponibilidade |
+| 6 | Retrospecto do confronto direto truncado pelo limite da lista: anunciava 10 confrontos onde havia 20 | média — dado errado na tela |
+| 7 | Percentuais da comunidade somavam 99 ou 101; a barra de comparação estourava o contêiner em 67/133 | baixa — visível ao usuário |
+
+Resistiram à primeira tentativa, sem precisar de correção: injeção de SQL,
+escalação de privilégio pelo corpo do cadastro, JWT com `alg=none`, JWT
+assinado com outro segredo, acesso a rota de administração sem papel, e
+vazamento de hash de senha nas respostas.
+
 ## Limitações declaradas
 
 - **Notificação local do RF43 exige development build.** Com Expo Go o
