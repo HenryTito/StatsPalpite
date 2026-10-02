@@ -8,7 +8,11 @@ describe('probabilidade preliminar (RF03)', () => {
       {},
       { homeForm: ['W', 'W', 'W'], awayForm: ['L', 'L', 'L'] },
       { homeForm: ['L'], awayForm: ['W'], headToHead: { homeWins: 0, draws: 0, awayWins: 9 } },
-      { homeForm: ['D', 'D'], awayForm: ['D', 'D'], headToHead: { homeWins: 1, draws: 1, awayWins: 1 } },
+      {
+        homeForm: ['D', 'D'],
+        awayForm: ['D', 'D'],
+        headToHead: { homeWins: 1, draws: 1, awayWins: 1 },
+      },
     ];
 
     inputs.forEach((input) => {
@@ -52,8 +56,14 @@ describe('probabilidade preliminar (RF03)', () => {
   });
 
   it('confia mais quando há um favorito claro', () => {
-    const clear = probabilityService.calculate({ homeForm: ['W', 'W', 'W'], awayForm: ['L', 'L', 'L'] });
-    const tight = probabilityService.calculate({ homeForm: ['W', 'D', 'L'], awayForm: ['W', 'D', 'L'] });
+    const clear = probabilityService.calculate({
+      homeForm: ['W', 'W', 'W'],
+      awayForm: ['L', 'L', 'L'],
+    });
+    const tight = probabilityService.calculate({
+      homeForm: ['W', 'D', 'L'],
+      awayForm: ['W', 'D', 'L'],
+    });
     expect(clear.confidence).toBeGreaterThan(tight.confidence);
   });
 });

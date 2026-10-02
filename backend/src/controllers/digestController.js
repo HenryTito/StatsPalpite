@@ -3,9 +3,10 @@
 const { z } = require('zod');
 
 const digestService = require('../services/digestService');
+const { isoDate } = require('../utils/validators');
 
 const schemas = {
-  daily: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
+  daily: z.object({ date: isoDate.optional() }),
   bulletin: z.object({ days: z.coerce.number().int().positive().max(30).optional() }),
 };
 

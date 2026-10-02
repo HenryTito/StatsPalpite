@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ApiError } from '../../core/api/ApiError';
 import type { MatchDetail } from '../../core/api/types';
 import { useAsync } from '../../core/hooks/useAsync';
 import { useCountdown } from '../../core/hooks/useCountdown';
@@ -69,11 +70,16 @@ function buildMetrics(detail: MatchDetail, t: (key: string) => string): Comparis
 
 export function DetalhePartidaScreen({ navigation, route }: Props) {
   const { t, formatTime, formatNumber } = useI18n();
+  // Navegar sem id só acontece por engano de rota ou deep link quebrado;
+  // sem a guarda, o app dispara GET /matches/ e mostra erro de validação.
   const matchId = route.params?.partidaId ?? '';
   const shareRef = useRef<View>(null);
 
   const { data, loading, error, reload } = useAsync(
-    () => matchRepository.detail(matchId),
+    () =>
+      matchId
+        ? matchRepository.detail(matchId)
+        : Promise.reject(new ApiError('Partida não informada', 400, 'MISSING_MATCH_ID')),
     [matchId],
   );
   const countdown = useCountdown(data?.kickoffAt ?? null);

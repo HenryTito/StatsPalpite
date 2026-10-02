@@ -84,11 +84,15 @@ class IngestionEngine {
   }
 
   async getLeagues() {
-    return this.cached('leagues', this.ttl.catalog, () => this.withFallback('leagues', 'fetchLeagues'));
+    return this.cached('leagues', this.ttl.catalog, () =>
+      this.withFallback('leagues', 'fetchLeagues'),
+    );
   }
 
   async getVenues() {
-    return this.cached('venues', this.ttl.catalog, () => this.withFallback('venues', 'fetchVenues'));
+    return this.cached('venues', this.ttl.catalog, () =>
+      this.withFallback('venues', 'fetchVenues'),
+    );
   }
 
   async getTeams() {
@@ -96,7 +100,9 @@ class IngestionEngine {
   }
 
   async getPlayers() {
-    return this.cached('players', this.ttl.catalog, () => this.withFallback('players', 'fetchPlayers'));
+    return this.cached('players', this.ttl.catalog, () =>
+      this.withFallback('players', 'fetchPlayers'),
+    );
   }
 
   async getMatches({ from, to } = {}) {
@@ -118,11 +124,15 @@ class IngestionEngine {
   }
 
   async getInjuries() {
-    return this.cached('injuries', this.ttl.injuries, () => this.withFallback('injuries', 'fetchInjuries'));
+    return this.cached('injuries', this.ttl.injuries, () =>
+      this.withFallback('injuries', 'fetchInjuries'),
+    );
   }
 
   async getReferees() {
-    return this.cached('referees', this.ttl.referees, () => this.withFallback('referees', 'fetchReferees'));
+    return this.cached('referees', this.ttl.referees, () =>
+      this.withFallback('referees', 'fetchReferees'),
+    );
   }
 
   /** Estado das fontes, consumido pelo endpoint de saúde. */

@@ -3,16 +3,21 @@
 const { z } = require('zod');
 
 const searchService = require('../services/searchService');
+const { searchTerm } = require('../utils/validators');
 
 const schemas = {
   global: z.object({
-    q: z.string().min(2, 'A busca precisa de pelo menos 2 caracteres'),
+    q: searchTerm,
     limit: z.coerce.number().int().positive().max(20).optional(),
-    types: z.string().optional(),
+    // Lista fechada: um tipo desconhecido não deve virar consulta a tabela nenhuma.
+    types: z
+      .string()
+      .regex(/^(team|player|league|venue)(,(team|player|league|venue))*$/, 'Tipo de busca inválido')
+      .optional(),
   }),
 
   players: z.object({
-    q: z.string().min(2, 'A busca precisa de pelo menos 2 caracteres'),
+    q: searchTerm,
     limit: z.coerce.number().int().positive().max(50).optional(),
   }),
 };

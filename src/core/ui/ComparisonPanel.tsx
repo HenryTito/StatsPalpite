@@ -44,6 +44,11 @@ function display(value: string | number | null): string {
  *
  * Quando os dois são zero, divide ao meio: uma barra vazia some da tela e o
  * usuário não distingue "empatado em zero" de "sem dado".
+ *
+ * A fatia da direita é o COMPLEMENTO da esquerda, nunca um segundo
+ * arredondamento. Arredondar os dois lados em separado soma 101 sempre que
+ * ambos caem em .5 — 67 contra 133 vira 34 + 67 — e a barra estoura o
+ * contêiner.
  */
 function weights(metric: ComparisonMetric): { home: number; away: number } {
   if (metric.homeWeight !== undefined && metric.awayWeight !== undefined) {
@@ -61,10 +66,9 @@ function weights(metric: ComparisonMetric): { home: number; away: number } {
   const total = homeValue + awayValue;
   if (total <= 0) return { home: 50, away: 50 };
 
-  return {
-    home: Math.round((homeValue / total) * 100),
-    away: Math.round((awayValue / total) * 100),
-  };
+  // Negativos viriam de dado corrompido; sem o corte, a barra inverte.
+  const homeShare = Math.min(100, Math.max(0, Math.round((homeValue / total) * 100)));
+  return { home: homeShare, away: 100 - homeShare };
 }
 
 /**

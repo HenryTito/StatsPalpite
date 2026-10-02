@@ -36,7 +36,11 @@ router.post(
   audit('auth.login'),
   authController.login,
 );
-router.post('/auth/refresh', validate({ body: authController.schemas.refresh }), authController.refresh);
+router.post(
+  '/auth/refresh',
+  validate({ body: authController.schemas.refresh }),
+  authController.refresh,
+);
 router.post(
   '/auth/logout',
   validate({ body: authController.schemas.refresh }),
@@ -72,10 +76,18 @@ router.get(
   audit('match.view_statistics', (req) => `match:${req.params.id}`),
   matchController.detail,
 );
-router.get('/compare', validate({ query: matchController.schemas.compare }), matchController.compare);
+router.get(
+  '/compare',
+  validate({ query: matchController.schemas.compare }),
+  matchController.compare,
+);
 
 // Busca — RF27, RF56, RF49
-router.get('/search', validate({ query: searchController.schemas.global }), searchController.global);
+router.get(
+  '/search',
+  validate({ query: searchController.schemas.global }),
+  searchController.global,
+);
 router.get(
   '/search/players',
   validate({ query: searchController.schemas.players }),
@@ -107,7 +119,14 @@ router.get(
 );
 
 // Operação restrita a administradores
-router.post('/admin/sync', authenticate, requireRole('admin'), audit('admin.sync'), systemController.sync);
+router.post(
+  '/admin/sync',
+  authenticate,
+  requireRole('admin'),
+  validate({ query: systemController.syncQuerySchema }),
+  audit('admin.sync'),
+  systemController.sync,
+);
 router.post(
   '/admin/ranking/snapshot',
   authenticate,

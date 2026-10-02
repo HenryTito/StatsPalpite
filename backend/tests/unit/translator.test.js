@@ -16,7 +16,11 @@ describe('camada anticorrupção', () => {
   });
 
   it('desaninha o placar da fonte', () => {
-    const dto = translator.toMatch({ fixture_id: 'x', situacao: 'FT', placar: { casa: 3, fora: 1 } });
+    const dto = translator.toMatch({
+      fixture_id: 'x',
+      situacao: 'FT',
+      placar: { casa: 3, fora: 1 },
+    });
     expect(dto.homeGoals).toBe(3);
     expect(dto.awayGoals).toBe(1);
   });
@@ -38,7 +42,9 @@ describe('camada anticorrupção', () => {
   it('traduz o vocabulário de desfalque', () => {
     expect(translator.toInjury({ situacao: 'OUT', jogador_id: 'p' }).status).toBe('out');
     expect(translator.toInjury({ situacao: 'DOUBTFUL', jogador_id: 'p' }).status).toBe('doubtful');
-    expect(translator.toInjury({ situacao: 'SUSPENDED', jogador_id: 'p' }).status).toBe('suspended');
+    expect(translator.toInjury({ situacao: 'SUSPENDED', jogador_id: 'p' }).status).toBe(
+      'suspended',
+    );
   });
 
   it('converte a lista de pares da API-Football em mapa', () => {
@@ -62,7 +68,11 @@ describe('camada anticorrupção', () => {
     });
 
     const external = apiFootball.toMatch({
-      fixture: { id: 99, timestamp: Date.parse('2026-10-01T19:00:00.000Z') / 1000, status: { short: 'FT' } },
+      fixture: {
+        id: 99,
+        timestamp: Date.parse('2026-10-01T19:00:00.000Z') / 1000,
+        status: { short: 'FT' },
+      },
       league: { id: 7 },
       teams: { home: { id: 1 }, away: { id: 2 } },
       goals: { home: 2, away: 1 },

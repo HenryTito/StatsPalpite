@@ -43,7 +43,8 @@ module.exports = (sequelize, DataTypes) => {
 
   /** Vencedor real da partida, ou null enquanto ela não termina. */
   Match.prototype.outcome = function outcome() {
-    if (this.status !== 'finished' || this.homeGoals === null || this.awayGoals === null) return null;
+    if (this.status !== 'finished' || this.homeGoals === null || this.awayGoals === null)
+      return null;
     if (this.homeGoals > this.awayGoals) return 'home';
     if (this.homeGoals < this.awayGoals) return 'away';
     return 'draw';

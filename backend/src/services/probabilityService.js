@@ -62,7 +62,9 @@ function calculate({ homeForm = [], awayForm = [], headToHead = {} } = {}) {
   const h2h = headToHeadScore(headToHead);
 
   const homeStrength =
-    homeFormScore * WEIGHTS.form + h2h * WEIGHTS.headToHead + HOME_ADVANTAGE * WEIGHTS.homeAdvantage;
+    homeFormScore * WEIGHTS.form +
+    h2h * WEIGHTS.headToHead +
+    HOME_ADVANTAGE * WEIGHTS.homeAdvantage;
   const awayStrength =
     awayFormScore * WEIGHTS.form +
     (1 - h2h) * WEIGHTS.headToHead +

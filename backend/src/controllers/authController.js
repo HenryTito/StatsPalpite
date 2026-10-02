@@ -3,6 +3,7 @@
 const { z } = require('zod');
 
 const authService = require('../services/authService');
+const { isoDate } = require('../utils/validators');
 
 /** Senha: mínimo 8 caracteres, com letra e número. */
 const passwordSchema = z
@@ -17,7 +18,7 @@ const schemas = {
     username: z.string().min(3).max(24),
     password: passwordSchema,
     passwordConfirmation: z.string(),
-    birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de nascimento deve ser YYYY-MM-DD'),
+    birthDate: isoDate,
   }),
 
   login: z.object({

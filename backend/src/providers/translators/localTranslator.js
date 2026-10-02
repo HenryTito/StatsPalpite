@@ -31,7 +31,8 @@ const INJURY_STATUS_MAP = {
 /** Converte "54.3%" ou 54.3 em 54.3. Devolve null quando não há valor. */
 function toNumber(value) {
   if (value === null || value === undefined) return null;
-  const parsed = typeof value === 'string' ? Number.parseFloat(value.replace('%', '').trim()) : Number(value);
+  const parsed =
+    typeof value === 'string' ? Number.parseFloat(value.replace('%', '').trim()) : Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 

@@ -14,6 +14,16 @@ const tokenService = require('./tokenService');
 
 const BCRYPT_ROUNDS = 10;
 
+/**
+ * Hash real de uma senha descartável, usado quando o e-mail não existe.
+ *
+ * Comparar contra uma string inventada não serve: o bcrypt rejeita o formato
+ * e devolve em 0ms, enquanto uma conta real custa dezenas de milissegundos.
+ * Essa diferença é mensurável e revela quais e-mails estão cadastrados. Com
+ * um hash legítimo, o trabalho é o mesmo nos dois caminhos.
+ */
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('senha-que-nunca-sera-usada', BCRYPT_ROUNDS);
+
 function normalizeEmail(email) {
   return String(email).trim().toLowerCase();
 }
@@ -82,9 +92,9 @@ async function register({ email, username, password, passwordConfirmation, birth
 async function login({ email, password }) {
   const user = await User.findOne({ where: { email: normalizeEmail(email) } });
 
-  // Compara mesmo sem usuário, para não revelar quais e-mails existem pelo tempo de resposta.
-  const hash = user ? user.passwordHash : '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv';
-  const matches = await bcrypt.compare(password, hash);
+  // Compara mesmo sem usuário, para não revelar quais e-mails existem pelo
+  // tempo de resposta. O hash de reserva é legítimo, então o custo é igual.
+  const matches = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_PASSWORD_HASH);
 
   if (!user || !matches) {
     throw AppError.unauthorized('E-mail ou senha incorretos', { code: 'INVALID_CREDENTIALS' });
@@ -133,10 +143,7 @@ async function requestPasswordReset({ email }) {
   if (!user) return genericResponse;
 
   // Invalida pedidos anteriores ainda abertos: um link ativo por vez.
-  await PasswordReset.update(
-    { usedAt: new Date() },
-    { where: { userId: user.id, usedAt: null } },
-  );
+  await PasswordReset.update({ usedAt: new Date() }, { where: { userId: user.id, usedAt: null } });
 
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + env.auth.passwordResetMinutes * 60 * 1000);
@@ -154,8 +161,10 @@ async function requestPasswordReset({ email }) {
     expiresInMinutes: env.auth.passwordResetMinutes,
   });
 
-  // O token só volta na resposta fora de produção, para permitir teste manual.
-  return env.isProduction ? genericResponse : { ...genericResponse, token };
+  // O token só volta na resposta quando isso é ligado de propósito
+  // (EXPOSE_RESET_TOKEN), nunca por acaso: devolvê-lo entrega a redefinição
+  // de senha de qualquer conta a quem souber o e-mail.
+  return env.auth.exposeResetToken ? { ...genericResponse, token } : genericResponse;
 }
 
 /** Conclui a recuperação: valida o token, troca a senha e derruba as sessões. */

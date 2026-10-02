@@ -15,11 +15,9 @@ const { RefreshToken } = require('../models');
  */
 
 function signAccessToken(user) {
-  return jwt.sign(
-    { sub: user.id, username: user.username, role: user.role },
-    env.auth.jwtSecret,
-    { expiresIn: env.auth.jwtExpiresIn },
-  );
+  return jwt.sign({ sub: user.id, username: user.username, role: user.role }, env.auth.jwtSecret, {
+    expiresIn: env.auth.jwtExpiresIn,
+  });
 }
 
 function verifyAccessToken(token) {
