@@ -11,7 +11,28 @@ Atende ao **RNF10**.
 
 ### 1. Subir o PostgreSQL
 
-No WSL ou Linux com o pacote já instalado:
+**Com Docker, que é o caminho recomendado:**
+
+```bash
+cd backend
+docker compose up -d
+```
+
+O container escuta na porta **5433**, e não na 5432 padrão, de propósito:
+outros projetos costumam subir o próprio Postgres na 5432, e a porta
+compartilhada faria a aplicação conectar no banco errado sem avisar. As
+extensões e o banco de teste são criados no primeiro start.
+
+**Sem Docker e sem privilégio de administrador**, há um script que baixa o
+servidor e roda um cluster no diretório do usuário:
+
+```bash
+./scripts/postgres-local.sh start
+```
+
+Ele usa a porta 5432; ajuste `DB_PORT` no `.env`.
+
+**Com o pacote do sistema já instalado:**
 
 ```bash
 sudo service postgresql start

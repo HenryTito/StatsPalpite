@@ -1,20 +1,20 @@
-node_modules/
-.expo/
-dist/
-web-build/
-*.log
-.env
-.DS_Store
-android/
-ios/
 
 # Backend
-backend/node_modules/
-backend/.env
-
 # Fastlane
-fastlane/report.xml
-fastlane/Preview.html
+# Projeto nativo gerado pelo prebuild
 *.keystore
-vendor/bundle/
+*.log
+.DS_Store
 .bundle/
+.env
+.expo/
+android/
+backend/.env
+backend/node_modules/
+dist/
+fastlane/Preview.html
+fastlane/report.xml
+ios/
+node_modules/
+vendor/bundle/
+web-build/
