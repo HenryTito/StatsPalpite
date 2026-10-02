@@ -364,8 +364,15 @@ function buildMatches(referenceDate) {
         sequence += 1;
         const isPast = offset < 0;
         const isToday = offset === 0;
-        // Hoje: o primeiro confronto de cada liga entra ao vivo.
-        const live = isToday && pairIndex === 0;
+        /**
+         * Só entra ao vivo o confronto de hoje cujo horário JÁ PASSOU.
+         *
+         * Marcar como ao vivo uma partida que começa daqui a dez horas produz
+         * um dado incoerente — placar e minuto corrente num jogo que não
+         * começou — e qualquer leitor nota.
+         */
+        const alreadyKickedOff = isToday && kickoff.getTime() <= Date.now();
+        const live = alreadyKickedOff && pairIndex === 0;
 
         matches.push({
           fixture_id: `M-${String(sequence).padStart(5, '0')}`,
@@ -375,13 +382,15 @@ function buildMatches(referenceDate) {
           local: home.estadio,
           arbitro: pick(REFEREES).id,
           data_hora_utc: kickoff.toISOString(),
-          situacao: isPast ? 'FT' : live ? 'LIVE' : 'NS',
+          // Passada ou já iniciada e fora do recorte ao vivo: encerrada.
+          situacao: isPast || (alreadyKickedOff && !live) ? 'FT' : live ? 'LIVE' : 'NS',
           minuto_atual: live ? intBetween(12, 80) : null,
-          placar: isPast
-            ? { casa: intBetween(0, 4), fora: intBetween(0, 3) }
-            : live
-              ? { casa: intBetween(0, 2), fora: intBetween(0, 2) }
-              : null,
+          placar:
+            isPast || (alreadyKickedOff && !live)
+              ? { casa: intBetween(0, 4), fora: intBetween(0, 3) }
+              : live
+                ? { casa: intBetween(0, 2), fora: intBetween(0, 2) }
+                : null,
           rodada: `Rodada ${offset + 21}`,
         });
       }
