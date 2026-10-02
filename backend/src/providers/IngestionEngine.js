@@ -135,6 +135,60 @@ class IngestionEngine {
     );
   }
 
+  /**
+   * Busca o catálogo inteiro de UMA única fonte.
+   *
+   * O fallback por operação serve bem às leituras avulsas, mas não a uma
+   * sincronização: ligas vindas de uma fonte e times de outra não casam,
+   * porque cada fonte usa o seu próprio identificador externo. O resultado é
+   * um catálogo em que nenhuma partida encontra o seu time, e todas são
+   * descartadas. Aqui a escolha é feita uma vez e vale para o lote.
+   *
+   * @param {{from?: Date, to?: Date}} range
+   */
+  async getCatalog({ from, to } = {}) {
+    const fetchAll = async (provider) => {
+      const [leagues, venues, teams, players, referees, matches, injuries] = [
+        await provider.fetchLeagues(),
+        await provider.fetchVenues(),
+        await provider.fetchTeams(),
+        await provider.fetchPlayers(),
+        await provider.fetchReferees(),
+        await provider.fetchMatches({ from, to }),
+        await provider.fetchInjuries(),
+      ];
+      const statistics = await provider.fetchStatistics(matches.map((match) => match.externalId));
+      return {
+        source: provider.name,
+        leagues,
+        venues,
+        teams,
+        players,
+        referees,
+        matches,
+        injuries,
+        statistics,
+      };
+    };
+
+    try {
+      return await fetchAll(this.primary);
+    } catch (primaryError) {
+      this.stats.primaryFailures += 1;
+      logger.warn('fonte primária falhou durante a sincronização', {
+        provider: this.primary.name,
+        error: primaryError.message,
+      });
+
+      if (!this.secondary) throw primaryError;
+
+      const result = await fetchAll(this.secondary);
+      this.stats.fallbacks += 1;
+      logger.info('catálogo inteiro veio da fonte secundária', { provider: this.secondary.name });
+      return result;
+    }
+  }
+
   /** Estado das fontes, consumido pelo endpoint de saúde. */
   async health() {
     const [primaryUp, secondaryUp] = await Promise.all([

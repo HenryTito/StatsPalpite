@@ -5,6 +5,13 @@ const { getJson } = require('../http');
 
 const BASE_URL = 'https://api.football-data.org/v4';
 
+/**
+ * O plano gratuito permite 10 requisições por minuto. Uma sincronização
+ * completa faz mais que isso, então as chamadas são espaçadas; sem isso a
+ * fonte devolve 429 no meio do lote e o catálogo chega pela metade.
+ */
+const MIN_INTERVAL_MS = 6500;
+
 const STATUS_MAP = {
   SCHEDULED: 'scheduled',
   TIMED: 'scheduled',
@@ -25,11 +32,28 @@ const STATUS_MAP = {
  * para src/providers/translators como as demais.
  */
 class FootballDataProvider extends FootballProvider {
-  constructor({ apiKey, competitions = ['BSA', 'PL', 'PD', 'CL'] }) {
+  constructor({ apiKey, competitions = ['BSA', 'PL', 'PD', 'CL'], minIntervalMs = MIN_INTERVAL_MS }) {
     super();
     if (!apiKey) throw new Error('FootballDataProvider exige uma API key');
     this.apiKey = apiKey;
     this.competitions = competitions;
+    this.minIntervalMs = minIntervalMs;
+    /** Momento da última chamada, para espaçar a seguinte. */
+    this.lastRequestAt = 0;
+    /** Fila serial: duas chamadas em paralelo furariam o espaçamento. */
+    this.queue = Promise.resolve();
+    /** O endpoint de times é consultado por fetchTeams e por fetchPlayers. */
+    this.teamsCache = new Map();
+  }
+
+  /** Espera o tempo que falta para respeitar o intervalo mínimo. */
+  async throttle() {
+    const elapsed = Date.now() - this.lastRequestAt;
+    const wait = this.minIntervalMs - elapsed;
+    if (wait > 0) {
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+    this.lastRequestAt = Date.now();
   }
 
   get name() {
@@ -45,7 +69,25 @@ class FootballDataProvider extends FootballProvider {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
     });
-    return getJson(url.toString(), { headers: this.headers, provider: this.name });
+
+    // Encadeia na fila para que as chamadas saiam uma de cada vez, espaçadas.
+    const result = this.queue.then(async () => {
+      await this.throttle();
+      return getJson(url.toString(), { headers: this.headers, provider: this.name });
+    });
+
+    // A fila segue mesmo se esta chamada falhar.
+    this.queue = result.catch(() => undefined);
+    return result;
+  }
+
+  /** Times de uma competição, memorizados por instância. */
+  async competitionTeams(code) {
+    if (this.teamsCache.has(code)) return this.teamsCache.get(code);
+    const body = await this.request(`/competitions/${code}/teams`);
+    const teams = body.teams ?? [];
+    this.teamsCache.set(code, teams);
+    return teams;
   }
 
   async healthCheck() {
@@ -80,8 +122,7 @@ class FootballDataProvider extends FootballProvider {
   async fetchTeams() {
     const teams = [];
     for (const code of this.competitions) {
-      const body = await this.request(`/competitions/${code}/teams`);
-      (body.teams ?? []).forEach((team) => {
+      (await this.competitionTeams(code)).forEach((team) => {
         teams.push({
           externalId: String(team.id),
           name: team.name,
@@ -99,8 +140,7 @@ class FootballDataProvider extends FootballProvider {
   async fetchPlayers() {
     const players = [];
     for (const code of this.competitions) {
-      const body = await this.request(`/competitions/${code}/teams`);
-      (body.teams ?? []).forEach((team) => {
+      (await this.competitionTeams(code)).forEach((team) => {
         (team.squad ?? []).forEach((player) => {
           players.push({
             externalId: String(player.id),
