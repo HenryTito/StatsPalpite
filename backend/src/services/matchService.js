@@ -153,11 +153,28 @@ async function summarize(match) {
   };
 }
 
-/** Partidas do dia, com filtros do RF16 (liga, data, time, status). */
+/**
+ * Lista de partidas, com os filtros do RF16 (liga, data, time, situação).
+ *
+ * A janela de tempo depende do que foi pedido:
+ *
+ *   data informada          → aquele dia
+ *   outro filtro, sem data  → sem recorte de dia
+ *   nenhum filtro           → hoje (a Home do RF03)
+ *
+ * Manter o recorte do dia quando o usuário filtra por time devolveria vazio
+ * quase sempre: um time joga uma ou duas vezes por semana, e quem busca
+ * "Corinthians" quer os jogos do Corinthians, não "os de hoje, se houver".
+ */
 async function listMatches({ date, leagueId, teamId, status, limit = 50, offset = 0 } = {}) {
-  const { start, end } = dayRange(date ? new Date(date) : new Date());
+  const hasOtherFilter = Boolean(leagueId || teamId || status);
+  const where = {};
 
-  const where = { kickoffAt: { [Op.gte]: start, [Op.lt]: end } };
+  if (date || !hasOtherFilter) {
+    const { start, end } = dayRange(date ? new Date(date) : new Date());
+    where.kickoffAt = { [Op.gte]: start, [Op.lt]: end };
+  }
+
   if (leagueId) where.leagueId = leagueId;
   if (status) where.status = status;
   if (teamId) where[Op.or] = [{ homeTeamId: teamId }, { awayTeamId: teamId }];
@@ -172,7 +189,12 @@ async function listMatches({ date, leagueId, teamId, status, limit = 50, offset 
   });
 
   const matches = await Promise.all(rows.map(summarize));
-  return { total: count, date: start.toISOString().slice(0, 10), matches };
+  return {
+    total: count,
+    // Sem recorte de dia, não há uma data que descreva a lista.
+    date: where.kickoffAt ? where.kickoffAt[Op.gte].toISOString().slice(0, 10) : null,
+    matches,
+  };
 }
 
 /** Detalhe da partida (RF04), com estatísticas, desfalques, árbitro e clima. */
